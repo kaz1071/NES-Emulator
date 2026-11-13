@@ -71,8 +71,31 @@ std::string chooseRomFile() {
     return path;
 }
 
-constexpr SDL_Rect LOAD_BUTTON{224, 303, 320, 72};
-constexpr SDL_Rect QUIT_BUTTON{224, 393, 320, 72};
+constexpr int BUTTON_WIDTH = 320;
+constexpr int BUTTON_HEIGHT = 72;
+constexpr int BUTTON_GAP = 18;
+
+std::array<SDL_Rect, 3> menuButtons(int width, int height) {
+    const int x = (width - BUTTON_WIDTH) / 2;
+    const int firstY = height / 2 - (3 * BUTTON_HEIGHT + 2 * BUTTON_GAP) / 2;
+    return {{
+        {x, firstY, BUTTON_WIDTH, BUTTON_HEIGHT},
+        {x, firstY + BUTTON_HEIGHT + BUTTON_GAP, BUTTON_WIDTH, BUTTON_HEIGHT},
+        {x, firstY + 2 * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT}
+    }};
+}
+
+bool contains(const SDL_Rect& rect, int x, int y) {
+    return x >= rect.x && x < rect.x + rect.w &&
+           y >= rect.y && y < rect.y + rect.h;
+}
+
+SDL_Rect gameRectangle(int width, int height) {
+    const float scale = std::min(width / 256.0f, height / 240.0f);
+    const int w = static_cast<int>(256 * scale);
+    const int h = static_cast<int>(240 * scale);
+    return {(width - w) / 2, (height - h) / 2, w, h};
+}
 
 std::array<unsigned char, 7> glyphFor(char c) {
     switch (c) {
@@ -86,6 +109,8 @@ std::array<unsigned char, 7> glyphFor(char c) {
         case 'U': return {{17,17,17,17,17,17,14}};
         case 'I': return {{31,4,4,4,4,4,31}};
         case 'T': return {{31,4,4,4,4,4,4}};
+        case 'F': return {{31,16,16,30,16,16,16}};
+        case 'S': return {{15,16,16,14,1,1,30}};
         default: return {{0,0,0,0,0,0,0}};
     }
 }
@@ -121,9 +146,11 @@ void drawMenuButton(SDL_Renderer* renderer, const SDL_Rect& button,
     }
 }
 
-void drawMenuButtons(SDL_Renderer* renderer) {
-    drawMenuButton(renderer, LOAD_BUTTON, "LOAD ROM");
-    drawMenuButton(renderer, QUIT_BUTTON, "QUIT");
+void drawMenuButtons(SDL_Renderer* renderer, int width, int height) {
+    const auto buttons = menuButtons(width, height);
+    drawMenuButton(renderer, buttons[0], "LOAD ROM");
+    drawMenuButton(renderer, buttons[1], "FULLSCREEN");
+    drawMenuButton(renderer, buttons[2], "QUIT");
 }
 
 void printCartridgeInfo(const Cartridge& c, const std::filesystem::path& path) {
@@ -198,19 +225,34 @@ int main(int argc, char** argv) {
 
     std::array<std::uint32_t, NES_WIDTH * NES_HEIGHT> frame{};
     bool running = true;
+    bool fullscreen = false;
     while (running) {
         SDL_Event event{};
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) running = false;
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) running = false;
-            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT &&
-                event.button.x >= QUIT_BUTTON.x && event.button.x < QUIT_BUTTON.x + QUIT_BUTTON.w &&
-                event.button.y >= QUIT_BUTTON.y && event.button.y < QUIT_BUTTON.y + QUIT_BUTTON.h) {
-                running = false;
+            if (event.type == SDL_KEYDOWN && event.key.repeat == 0 &&
+                event.key.keysym.sym == SDLK_F11) {
+                const Uint32 mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+                if (SDL_SetWindowFullscreen(window, mode) == 0) {
+                    fullscreen = !fullscreen;
+                } else {
+                    std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\\n';
+                }
             }
-            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT &&
-                event.button.x >= LOAD_BUTTON.x && event.button.x < LOAD_BUTTON.x + LOAD_BUTTON.w &&
-                event.button.y >= LOAD_BUTTON.y && event.button.y < LOAD_BUTTON.y + LOAD_BUTTON.h) {
+            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+                int windowWidth = 0, windowHeight = 0;
+                SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+                const auto buttons = menuButtons(windowWidth, windowHeight);
+                if (contains(buttons[2], event.button.x, event.button.y)) {
+                    running = false;
+                } else if (contains(buttons[1], event.button.x, event.button.y)) {
+                    const Uint32 mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+                    if (SDL_SetWindowFullscreen(window, mode) == 0) {
+                        fullscreen = !fullscreen;
+                    } else {
+                        std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\\n';
+                    }
+                } else if (contains(buttons[0], event.button.x, event.button.y)) {
                 const std::string selected = chooseRomFile();
                 if (!selected.empty()) {
                     Cartridge nextCartridge;
@@ -272,11 +314,13 @@ int main(int argc, char** argv) {
         bus.renderFrame(frame);
         SDL_UpdateTexture(screen, nullptr, frame.data(),
             NES_WIDTH * static_cast<int>(sizeof(std::uint32_t)));
+        int outputWidth = 0, outputHeight = 0;
+        SDL_GetRendererOutputSize(renderer, &outputWidth, &outputHeight);
         SDL_SetRenderDrawColor(renderer, 18, 22, 30, 255);
         SDL_RenderClear(renderer);
-        const SDL_Rect gameArea{0, 24, WINDOW_WIDTH, WINDOW_HEIGHT - 48};
+        const SDL_Rect gameArea = gameRectangle(outputWidth, outputHeight);
         SDL_RenderCopy(renderer, screen, nullptr, &gameArea);
-        drawMenuButtons(renderer);
+        drawMenuButtons(renderer, outputWidth, outputHeight);
         SDL_RenderPresent(renderer);
     }
 
