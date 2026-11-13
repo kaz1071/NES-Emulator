@@ -65,7 +65,7 @@ The emulator core is being implemented in this repository rather than wrapping a
 
 Press **Escape** to close the window.
 
-## Version 0.16.0
+## Version 0.17.0
 
 - Added large, vertically stacked LOAD ROM and QUIT buttons centered in the window.
 - Added on-screen success and error messages when selecting a ROM.
@@ -74,3 +74,6 @@ Press **Escape** to close the window.
 - Kept the menu buttons and text monochrome.
 - Removed the diagnostic color grid; the PPU output is black until background rendering is enabled.
 - Preserved the NES color palette for actual game graphics.
+
+
+Version 0.17.0 adds an approximate PPU clock (341 dots × 262 scanlines) and updates the PPUSTATUS vblank flag, which allows games that poll vblank to make progress. This is not cycle-accurate and NMI delivery is not implemented yet.
