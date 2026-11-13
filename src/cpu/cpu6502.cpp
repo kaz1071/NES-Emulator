@@ -56,6 +56,9 @@ void CPU6502::reset() {
     status = FLAG_UNUSED | FLAG_INTERRUPT;
     isHalted = false;
     lastError.clear();
+    traceAddresses.fill(0);
+    traceOpcodes.fill(0);
+    traceIndex = 0;
     const std::uint8_t low = read(0xFFFC);
     const std::uint8_t high = read(0xFFFD);
     pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
@@ -98,7 +101,11 @@ bool CPU6502::step() {
         if (condition) pc = static_cast<std::uint16_t>(pc + offset);
     };
 
+    const std::uint16_t instructionAddress = pc;
     const std::uint8_t opcode = fetch();
+    traceAddresses[traceIndex] = instructionAddress;
+    traceOpcodes[traceIndex] = opcode;
+    traceIndex = (traceIndex + 1) % traceAddresses.size();
     switch (opcode) {
         // Loads (all LDA/LDX/LDY forms update Zero and Negative flags)
         case 0xA9: a = fetch(); setZeroNegative(a); break;
@@ -255,3 +262,9 @@ bool CPU6502::step() {
 
 bool CPU6502::halted() const { return isHalted; }
 const std::string& CPU6502::error() const { return lastError; }
+std::uint16_t CPU6502::debugTraceAddress(std::size_t index) const {
+    return traceAddresses[(traceIndex + index) % traceAddresses.size()];
+}
+std::uint8_t CPU6502::debugTraceOpcode(std::size_t index) const {
+    return traceOpcodes[(traceIndex + index) % traceOpcodes.size()];
+}
