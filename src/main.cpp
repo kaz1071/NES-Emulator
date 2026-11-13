@@ -228,6 +228,8 @@ int main(int argc, char** argv) {
         std::cout << "Experimental CPU execution active (partial 6502 instruction set; not cycle-accurate).\n";
 
     std::array<std::uint32_t, NES_WIDTH * NES_HEIGHT> frame{};
+    Uint32 lastCpuDiagnostic = SDL_GetTicks();
+    std::uint64_t instructionsSinceDiagnostic = 0;
     bool running = true;
     bool fullscreen = false;
     while (running) {
@@ -310,10 +312,24 @@ int main(int argc, char** argv) {
                     }
                     break;
                 }
+                ++instructionsSinceDiagnostic;
                 bus.clockPpu();
                 bus.clockPpu();
                 bus.clockPpu();
             }
+        }
+
+        const Uint32 diagnosticNow = SDL_GetTicks();
+        if (hasCartridge && diagnosticNow - lastCpuDiagnostic >= 2000) {
+            std::cout << "CPU debug: PC=$" << std::hex << cpu.pc
+                      << " A=$" << static_cast<int>(cpu.a)
+                      << " X=$" << static_cast<int>(cpu.x)
+                      << " Y=$" << static_cast<int>(cpu.y)
+                      << " P=$" << static_cast<int>(cpu.status)
+                      << std::dec << " instructions/2s=" << instructionsSinceDiagnostic
+                      << " halted=" << (cpu.halted() ? "yes" : "no") << '\n';
+            instructionsSinceDiagnostic = 0;
+            lastCpuDiagnostic = diagnosticNow;
         }
 
         bus.renderFrame(frame);
