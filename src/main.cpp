@@ -345,7 +345,7 @@ int main(int argc, char** argv) {
         SDL_RenderClear(renderer);
         const SDL_Rect gameArea = gameRectangle(outputWidth, outputHeight);
         SDL_RenderCopy(renderer, screen, nullptr, &gameArea);
-        drawMenuButtons(renderer, outputWidth, outputHeight);
+        if (!hasCartridge) drawMenuButtons(renderer, outputWidth, outputHeight);
         SDL_RenderPresent(renderer);
     }
 
