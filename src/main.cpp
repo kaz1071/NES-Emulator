@@ -94,15 +94,28 @@ int main(int argc, char** argv) {
 
     std::cout << "NES Emulator started. Press Escape to quit.\n";
     if (hasCartridge) {
-        std::cout << "Static PPU background renderer active; CPU gameplay execution is not enabled yet.\n";
+        std::cout << "Experimental CPU execution active (partial 6502 instruction set; not cycle-accurate).\n";
     }
     std::array<std::uint32_t, NES_WIDTH * NES_HEIGHT> frame{};
     bool running = true;
+    bool cpuStopReported = false;
     while (running) {
         SDL_Event event{};
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) running = false;
             if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) running = false;
+        }
+        // Execute bounded CPU work per displayed frame. This is not cycle-accurate.
+        if (hasCartridge && !cpu.halted()) {
+            for (int instruction = 0; instruction < 30000; ++instruction) {
+                if (!cpu.step()) {
+                    if (!cpuStopReported) {
+                        std::cerr << "CPU stopped: " << cpu.error() << '\\n';
+                        cpuStopReported = true;
+                    }
+                    break;
+                }
+            }
         }
         bus.renderFrame(frame);
         SDL_UpdateTexture(screen, nullptr, frame.data(),
