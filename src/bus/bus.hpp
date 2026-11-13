@@ -37,6 +37,7 @@ public:
     std::size_t ppuVisibleUniqueTilesDebug() const { return ppu.debugVisibleUniqueTiles(); }
     std::size_t ppuVisiblePatternPixelsDebug() const { return ppu.debugVisiblePatternPixels(); }
     std::array<std::size_t, 4> ppuVisiblePixelValueCountsDebug() const { return ppu.debugVisiblePixelValueCounts(); }
+    std::array<std::size_t, 64> ppuVisiblePaletteIndexCountsDebug() const { return ppu.debugVisiblePaletteIndexCounts(); }
 private:
     std::array<std::uint8_t, 2048> ram{};
     std::array<std::uint8_t, 8192> prgRam{};
