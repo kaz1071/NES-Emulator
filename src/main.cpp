@@ -337,6 +337,10 @@ int main(int argc, char** argv) {
                       << "PPU debug: CTRL=$" << std::hex << static_cast<int>(bus.ppuControlDebug())
                       << " MASK=$" << static_cast<int>(bus.ppuMaskDebug())
                       << " STATUS=$" << static_cast<int>(bus.ppuStatusDebug())
+                      << std::dec << " position=" << bus.ppuScanlineDebug() << ":" << bus.ppuCycleDebug()
+                      << " vblank-events=" << bus.ppuVblankEventsDebug()
+                      << " vblank-status-reads=" << bus.ppuVblankStatusReadsDebug()
+                      << std::hex
                       << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
                       << std::dec << " nametable-nonzero=" << bus.ppuNametableNonZeroDebug()
                       << "/4096 nametable-tables=[" << bus.ppuNametableTableNonZeroDebug(0)
