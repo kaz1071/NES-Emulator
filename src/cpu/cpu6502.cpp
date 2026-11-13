@@ -209,15 +209,14 @@ bool CPU6502::step() {
             setFlag(FLAG_CARRY, (oldValue & 0x01) != 0);
             write(address, result); setZeroNegative(result); break;
         }
-        case 0x0E: case 0x16: case 0x1E: {
-            const std::uint16_t address = opcode == 0x0E ? fetchWord() :
-                opcode == 0x16 ? zpx() : absx();
+        case 0x06: case 0x0E: case 0x16: case 0x1E: {
+            const std::uint16_t address = opcode == 0x06 ? zp() :
+                opcode == 0x0E ? fetchWord() : opcode == 0x16 ? zpx() : absx();
             const auto oldValue = read(address);
             const auto result = static_cast<std::uint8_t>(oldValue << 1);
             setFlag(FLAG_CARRY, (oldValue & 0x80) != 0);
             write(address, result); setZeroNegative(result); break;
         }
-        case 0x4A: break; // Accumulator LSR is implemented in the original switch below.
         case 0x2A: {
             const bool carryIn = getFlag(FLAG_CARRY);
             setFlag(FLAG_CARRY, (a & 0x80) != 0);
