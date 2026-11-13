@@ -24,6 +24,8 @@ public:
     int ppuScanlineDebug() const { return ppu.debugScanline(); }
     int ppuCycleDebug() const { return ppu.debugPpuCycle(); }
     std::uint8_t ppuPaletteDebug() const { return ppu.debugPalette(); }
+    std::uint8_t ppuScrollXDebug() const { return ppu.debugScrollX(); }
+    std::uint8_t ppuScrollYDebug() const { return ppu.debugScrollY(); }
     std::size_t ppuNametableNonZeroDebug() const { return ppu.debugNametableNonZero(); }
     std::size_t ppuNametableTableNonZeroDebug(std::size_t table) const { return ppu.debugNametableTableNonZero(table); }
     std::uint8_t ppuNametableByteDebug(std::size_t table, std::size_t offset) const { return ppu.debugNametableByte(table, offset); }
