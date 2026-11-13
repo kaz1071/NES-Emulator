@@ -10,6 +10,7 @@ public:
     void connectCartridge(Cartridge* cartridge);
     void reset();
     void clock();
+    void updateSpriteZeroHit();
     bool consumeNmi();
     std::uint8_t debugControl() const { return control; }
     std::uint8_t debugMask() const { return mask; }
