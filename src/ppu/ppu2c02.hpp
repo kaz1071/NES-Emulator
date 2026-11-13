@@ -28,6 +28,8 @@ public:
     std::size_t debugSelectedPatternNonZero() const;
     std::size_t debugTileNonZeroPixels(std::uint8_t tile, std::uint16_t patternBase) const;
     std::size_t debugPaletteNonZero() const;
+    std::size_t debugVisibleUniqueTiles() const;
+    std::size_t debugVisiblePatternPixels() const;
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
