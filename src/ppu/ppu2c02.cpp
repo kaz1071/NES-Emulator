@@ -19,12 +19,15 @@ void PPU2C02::reset() {
     ppuCycle = 0;
     scanline = 261;
     nmiPending = false;
+    vblankEvents = 0;
+    vblankStatusReads = 0;
 }
 
 void PPU2C02::clock() {
     // Approximate NTSC PPU timing: 341 dots across 262 scanlines.
     if (scanline == 241 && ppuCycle == 1) {
         status |= 0x80; // VBlank begins
+        ++vblankEvents;
         if (control & 0x80) nmiPending = true;
     }
     if (scanline == 261 && ppuCycle == 1) {
@@ -234,6 +237,7 @@ std::uint8_t PPU2C02::cpuRead(std::uint16_t registerAddress) {
     std::uint8_t value = openBus;
 
     if (reg == 2) {
+        if (status & 0x80) ++vblankStatusReads;
         value = static_cast<std::uint8_t>((status & 0xE0) | (openBus & 0x1F));
         status &= 0x7F;
         writeSecond = false;
