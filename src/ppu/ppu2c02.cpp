@@ -109,6 +109,15 @@ std::size_t PPU2C02::debugNametableTableNonZero(std::size_t table) const {
         [](std::uint8_t value) { return value != 0; }));
 }
 
+std::uint8_t PPU2C02::debugNametableByte(std::size_t table, std::size_t offset) const {
+    if (table >= 4 || offset >= 0x400) return 0;
+    return nametableRam[table * 0x400 + offset];
+}
+
+std::uint8_t PPU2C02::debugPaletteByte(std::size_t index) const {
+    return index < paletteRam.size() ? paletteRam[index] : 0;
+}
+
 std::size_t PPU2C02::debugChrNonZero() const {
     if (cartridge == nullptr) return 0;
     std::size_t count = 0;
