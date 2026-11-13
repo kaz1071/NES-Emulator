@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
             for (int instruction = 0; instruction < 30000; ++instruction) {
                 if (!cpu.step()) {
                     if (!cpuStopReported) {
-                        std::cerr << "CPU stopped: " << cpu.error() << '\\n';
+                        std::cerr << "CPU stopped: " << cpu.error() << '\n';
                         cpuStopReported = true;
                     }
                     break;
