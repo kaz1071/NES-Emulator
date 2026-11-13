@@ -20,6 +20,8 @@ public:
     int debugScanline() const { return scanline; }
     int debugPpuCycle() const { return ppuCycle; }
     std::uint8_t debugPalette() const { return paletteRam[0]; }
+    std::uint8_t debugScrollX() const { return scrollX; }
+    std::uint8_t debugScrollY() const { return scrollY; }
     std::size_t debugNametableNonZero() const;
     std::size_t debugNametableTableNonZero(std::size_t table) const;
     std::uint8_t debugNametableByte(std::size_t table, std::size_t offset) const;
