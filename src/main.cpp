@@ -331,7 +331,12 @@ int main(int argc, char** argv) {
                       << " Y=$" << static_cast<int>(cpu.y)
                       << " P=$" << static_cast<int>(cpu.status)
                       << std::dec << " instructions/2s=" << instructionsSinceDiagnostic
-                      << " halted=" << (cpu.halted() ? "yes" : "no") << '\n';
+                      << " halted=" << (cpu.halted() ? "yes" : "no") << '\n'
+                      << "PPU debug: CTRL=$" << std::hex << static_cast<int>(bus.ppuControlDebug())
+                      << " MASK=$" << static_cast<int>(bus.ppuMaskDebug())
+                      << " STATUS=$" << static_cast<int>(bus.ppuStatusDebug())
+                      << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
+                      << std::dec << '\n';
             instructionsSinceDiagnostic = 0;
             lastCpuDiagnostic = diagnosticNow;
         }
