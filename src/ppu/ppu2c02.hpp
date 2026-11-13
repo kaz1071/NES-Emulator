@@ -8,6 +8,7 @@ class PPU2C02 {
 public:
     void connectCartridge(Cartridge* cartridge);
     void reset();
+    void clock();
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
@@ -34,6 +35,8 @@ private:
     std::uint8_t scrollX = 0;
     std::uint8_t scrollY = 0;
     bool writeSecond = false;
+    int ppuCycle = 0;
+    int scanline = 261;
 
     std::uint16_t mapNametableAddress(std::uint16_t address) const;
     static std::uint8_t mapPaletteAddress(std::uint16_t address);
