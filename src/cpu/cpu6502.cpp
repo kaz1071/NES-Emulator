@@ -154,6 +154,9 @@ bool CPU6502::step() {
             break;
         }
 
+        // Zero-page arithmetic
+        case 0x65: adc(read(zp())); break;
+
         // Immediate logic, arithmetic, and comparisons
         case 0x29: a &= fetch(); setZeroNegative(a); break;
         case 0x09: a |= fetch(); setZeroNegative(a); break;
