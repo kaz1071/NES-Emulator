@@ -8,6 +8,7 @@ class PPU2C02 {
 public:
     void connectCartridge(Cartridge* cartridge);
     void reset();
+    void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
     void cpuWrite(std::uint16_t registerAddress, std::uint8_t value);
