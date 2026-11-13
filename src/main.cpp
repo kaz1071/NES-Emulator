@@ -338,7 +338,8 @@ int main(int argc, char** argv) {
                       << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
                       << std::dec << " nametable-nonzero=" << bus.ppuNametableNonZeroDebug()
                       << "/4096 chr-nonzero=" << bus.ppuChrNonZeroDebug()
-                      << "/8192 palette-nonzero=" << bus.ppuPaletteNonZeroDebug()
+                      << "/8192 selected-pattern-nonzero=" << bus.ppuSelectedPatternNonZeroDebug()
+                      << "/4096 palette-nonzero=" << bus.ppuPaletteNonZeroDebug()
                       << "/32\n";
             std::array<std::uint32_t, 64> observedColors{};
             std::size_t colorCount = 0;
