@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
 
     std::cout << "NES Emulator started. Use the QUIT button to exit; F11 toggles fullscreen.\n";
     if (hasCartridge)
-        std::cout << "Experimental CPU execution active (official 6502 opcodes supported; timing is not cycle-accurate).\n";
+        std::cout << "Experimental CPU execution active (official 6502 opcodes supported; instruction-cycle timing enabled, not cycle-perfect).\n";
 
     std::array<std::uint32_t, NES_WIDTH * NES_HEIGHT> frame{};
     Uint32 lastCpuDiagnostic = SDL_GetTicks();
@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
                         printCartridgeInfo(cartridge, path);
                         std::cout << "CPU reset complete. 6502 reset vector: $" << std::hex
                                   << cpu.pc << std::dec << '\n'
-                                  << "Experimental CPU execution active (official 6502 opcodes supported; timing is not cycle-accurate).\n";
+                                  << "Experimental CPU execution active (official 6502 opcodes supported; instruction-cycle timing enabled, not cycle-perfect).\n";
                         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
                             "ROM loaded", "The ROM file was loaded. Game compatibility is still experimental, so the screen may remain black if the game uses unsupported CPU instructions or PPU features.", window);
                     }
@@ -305,7 +305,9 @@ int main(int argc, char** argv) {
         bus.setControllerState(0, controller1);
 
         if (hasCartridge && !cpu.halted()) {
-            for (int instruction = 0; instruction < 30000; ++instruction) {
+            // One NTSC frame is approximately 29,780 CPU cycles.
+            int cpuCyclesThisFrame = 0;
+            while (cpuCyclesThisFrame < 29780 && !cpu.halted()) {
                 if (!cpu.step()) {
                     if (!cpuStopReported) {
                         std::cerr << "CPU stopped: " << cpu.error() << '\n';
@@ -314,9 +316,13 @@ int main(int argc, char** argv) {
                     break;
                 }
                 ++instructionsSinceDiagnostic;
-                bus.clockPpu();
-                bus.clockPpu();
-                bus.clockPpu();
+                const int instructionCycles = cpu.lastStepCycles();
+                cpuCyclesThisFrame += instructionCycles;
+                for (int cycle = 0; cycle < instructionCycles; ++cycle) {
+                    bus.clockPpu();
+                    bus.clockPpu();
+                    bus.clockPpu();
+                }
             }
         }
 
