@@ -141,6 +141,20 @@ std::size_t PPU2C02::debugPaletteNonZero() const {
         [](std::uint8_t value) { return value != 0; }));
 }
 
+std::size_t PPU2C02::debugTileNonZeroPixels(std::uint8_t tile, std::uint16_t patternBase) const {
+    std::size_t count = 0;
+    const std::uint16_t base = static_cast<std::uint16_t>(patternBase + tile * 16);
+    for (int row = 0; row < 8; ++row) {
+        const std::uint8_t lo = ppuRead(static_cast<std::uint16_t>(base + row));
+        const std::uint8_t hi = ppuRead(static_cast<std::uint16_t>(base + row + 8));
+        for (int col = 0; col < 8; ++col) {
+            const int bit = 7 - col;
+            if (((lo >> bit) & 1) || ((hi >> bit) & 1)) ++count;
+        }
+    }
+    return count;
+}
+
 void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     static constexpr std::array<std::uint32_t, 64> colors = {
         0xFF666666,0xFF002A88,0xFF1412A7,0xFF3B00A4,0xFF5C007E,0xFF6E0040,0xFF6C0600,0xFF561D00,
