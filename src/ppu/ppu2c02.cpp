@@ -145,6 +145,37 @@ std::size_t PPU2C02::debugPaletteNonZero() const {
         [](std::uint8_t value) { return value != 0; }));
 }
 
+std::size_t PPU2C02::debugVisibleUniqueTiles() const {
+    std::array<bool, 256> seen{};
+    const std::uint16_t tableBase = static_cast<std::uint16_t>(
+        0x2000 + (control & 0x03) * 0x400);
+    std::size_t unique = 0;
+    for (int y = 0; y < 30; ++y) {
+        for (int x = 0; x < 32; ++x) {
+            const auto tile = ppuRead(static_cast<std::uint16_t>(tableBase + y * 32 + x));
+            if (!seen[tile]) {
+                seen[tile] = true;
+                ++unique;
+            }
+        }
+    }
+    return unique;
+}
+
+std::size_t PPU2C02::debugVisiblePatternPixels() const {
+    const std::uint16_t tableBase = static_cast<std::uint16_t>(
+        0x2000 + (control & 0x03) * 0x400);
+    const std::uint16_t patternBase = (control & 0x10) ? 0x1000 : 0x0000;
+    std::size_t pixels = 0;
+    for (int y = 0; y < 30; ++y) {
+        for (int x = 0; x < 32; ++x) {
+            const auto tile = ppuRead(static_cast<std::uint16_t>(tableBase + y * 32 + x));
+            pixels += debugTileNonZeroPixels(tile, patternBase);
+        }
+    }
+    return pixels;
+}
+
 std::size_t PPU2C02::debugTileNonZeroPixels(std::uint8_t tile, std::uint16_t patternBase) const {
     std::size_t count = 0;
     const std::uint16_t base = static_cast<std::uint16_t>(patternBase + tile * 16);
