@@ -141,6 +141,12 @@ bool CPU6502::step() {
         case 0x88: --y; setZeroNegative(y); break;
 
         // Accumulator shifts
+        case 0x4A: {
+            setFlag(FLAG_CARRY, (a & 0x01) != 0);
+            a = static_cast<std::uint8_t>(a >> 1);
+            setZeroNegative(a);
+            break;
+        }
         case 0x0A: {
             setFlag(FLAG_CARRY, (a & 0x80) != 0);
             a = static_cast<std::uint8_t>(a << 1);
