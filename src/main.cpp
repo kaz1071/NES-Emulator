@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 namespace {
-constexpr int WINDOW_WIDTH = 768, WINDOW_HEIGHT = 768, TOOLBAR_HEIGHT = 48;
+constexpr int WINDOW_WIDTH = 768, WINDOW_HEIGHT = 768;
 constexpr int NES_WIDTH = 256, NES_HEIGHT = 240;
 
 const char* mirroringName(Mirroring m) {
@@ -71,33 +71,59 @@ std::string chooseRomFile() {
     return path;
 }
 
-void drawLoadButton(SDL_Renderer* renderer) {
-    SDL_Rect button{312, 8, 144, 32};
+constexpr SDL_Rect LOAD_BUTTON{224, 303, 320, 72};
+constexpr SDL_Rect QUIT_BUTTON{224, 393, 320, 72};
+
+std::array<unsigned char, 7> glyphFor(char c) {
+    switch (c) {
+        case 'L': return {{16,16,16,16,16,16,31}};
+        case 'O': return {{14,17,17,17,17,17,14}};
+        case 'A': return {{14,17,17,31,17,17,17}};
+        case 'D': return {{30,17,17,17,17,17,30}};
+        case 'R': return {{30,17,17,30,20,18,17}};
+        case 'M': return {{17,27,21,21,17,17,17}};
+        case 'Q': return {{14,17,17,17,21,18,13}};
+        case 'U': return {{17,17,17,17,17,17,14}};
+        case 'I': return {{31,4,4,4,4,4,31}};
+        case 'T': return {{31,4,4,4,4,4,4}};
+        default: return {{0,0,0,0,0,0,0}};
+    }
+}
+
+void drawMenuButton(SDL_Renderer* renderer, const SDL_Rect& button,
+                    const std::string& label) {
     SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
     SDL_RenderFillRect(renderer, &button);
-    SDL_SetRenderDrawColor(renderer, 210, 210, 210, 255);
+    SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
     SDL_RenderDrawRect(renderer, &button);
 
-    // Tiny built-in 5x7 font for the LOAD ROM button.
-    const std::array<std::array<unsigned char, 7>, 9> glyphs{{
-        {{16,16,16,16,16,16,31}}, {{14,17,17,17,17,17,14}},
-        {{14,17,17,31,17,17,17}}, {{30,17,17,17,17,17,30}},
-        {{30,17,17,30,20,18,17}}, {{31,16,16,30,16,16,31}},
-        {{17,27,21,21,17,17,17}}, {{0,0,0,0,0,0,0}},
-        {{31,16,16,30,16,16,16}}
-    }};
-    const std::array<int, 8> letters{{0,1,2,3,7,4,1,6}}; // LOAD ROM
+    constexpr int scale = 4;
+    constexpr int glyphWidth = 5 * scale;
+    constexpr int glyphGap = 2 * scale;
+    const int textWidth = static_cast<int>(label.size()) * glyphWidth
+                        + static_cast<int>(label.size() - 1) * glyphGap;
+    const int originX = button.x + (button.w - textWidth) / 2;
+    const int originY = button.y + (button.h - 7 * scale) / 2;
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    int x = 325;
-    for (int glyph : letters) {
-        for (int y = 0; y < 7; ++y)
-            for (int col = 0; col < 5; ++col)
-                if (glyphs[glyph][y] & (1U << (4-col))) {
-                    SDL_Rect pixel{x + col*2, 13 + y*2, 2, 2};
+    int x = originX;
+    for (char c : label) {
+        const auto glyph = glyphFor(c);
+        for (int y = 0; y < 7; ++y) {
+            for (int col = 0; col < 5; ++col) {
+                if (glyph[y] & (1U << (4 - col))) {
+                    SDL_Rect pixel{x + col * scale, originY + y * scale,
+                                   scale, scale};
                     SDL_RenderFillRect(renderer, &pixel);
                 }
-        x += 15;
+            }
+        }
+        x += glyphWidth + glyphGap;
     }
+}
+
+void drawMenuButtons(SDL_Renderer* renderer) {
+    drawMenuButton(renderer, LOAD_BUTTON, "LOAD ROM");
+    drawMenuButton(renderer, QUIT_BUTTON, "QUIT");
 }
 
 void printCartridgeInfo(const Cartridge& c, const std::filesystem::path& path) {
@@ -177,8 +203,13 @@ int main(int argc, char** argv) {
             if (event.type == SDL_QUIT) running = false;
             if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) running = false;
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT &&
-                event.button.x >= 312 && event.button.x < 456 &&
-                event.button.y >= 8 && event.button.y < 40) {
+                event.button.x >= QUIT_BUTTON.x && event.button.x < QUIT_BUTTON.x + QUIT_BUTTON.w &&
+                event.button.y >= QUIT_BUTTON.y && event.button.y < QUIT_BUTTON.y + QUIT_BUTTON.h) {
+                running = false;
+            }
+            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT &&
+                event.button.x >= LOAD_BUTTON.x && event.button.x < LOAD_BUTTON.x + LOAD_BUTTON.w &&
+                event.button.y >= LOAD_BUTTON.y && event.button.y < LOAD_BUTTON.y + LOAD_BUTTON.h) {
                 const std::string selected = chooseRomFile();
                 if (!selected.empty()) {
                     Cartridge nextCartridge;
@@ -223,9 +254,9 @@ int main(int argc, char** argv) {
             NES_WIDTH * static_cast<int>(sizeof(std::uint32_t)));
         SDL_SetRenderDrawColor(renderer, 18, 22, 30, 255);
         SDL_RenderClear(renderer);
-        const SDL_Rect gameArea{0, TOOLBAR_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT-TOOLBAR_HEIGHT};
+        const SDL_Rect gameArea{0, 24, WINDOW_WIDTH, WINDOW_HEIGHT - 48};
         SDL_RenderCopy(renderer, screen, nullptr, &gameArea);
-        drawLoadButton(renderer);
+        drawMenuButtons(renderer);
         SDL_RenderPresent(renderer);
     }
 
