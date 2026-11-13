@@ -396,12 +396,22 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     if ((mask & 0x10) == 0) return;
     const bool tall = (control & 0x20) != 0;
     const int height = tall ? 16 : 8;
-    int drawn = 0;
-    for (int s = 0; s < 64 && drawn < 8; ++s) {
+    // The NES limit is eight sprites per scanline, not eight per frame.
+    // Count each sprite on every visible scanline it overlaps.
+    std::array<std::uint8_t, 240> spritesOnLine{};
+    for (int s = 0; s < 64; ++s) {
         const std::uint8_t rawY = oam[s * 4], tile = oam[s * 4 + 1], attr = oam[s * 4 + 2];
         const int sx = oam[s * 4 + 3], sy = static_cast<int>(rawY) + 1;
         if (sy >= 240 || sy + height <= 0) continue;
-        ++drawn;
+        bool visibleOnAllowedLine = false;
+        for (int row = 0; row < height; ++row) {
+            const int py = sy + row;
+            if (py >= 0 && py < 240 && spritesOnLine[py] < 8) {
+                ++spritesOnLine[py];
+                visibleOnAllowedLine = true;
+            }
+        }
+        if (!visibleOnAllowedLine) continue;
         for (int row = 0; row < height; ++row) {
             const int py = sy + row;
             if (py < 0 || py >= 240) continue;
