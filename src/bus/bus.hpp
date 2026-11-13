@@ -21,6 +21,7 @@ public:
     std::uint8_t ppuPaletteDebug() const { return ppu.debugPalette(); }
     std::size_t ppuNametableNonZeroDebug() const { return ppu.debugNametableNonZero(); }
     std::size_t ppuChrNonZeroDebug() const { return ppu.debugChrNonZero(); }
+    std::size_t ppuSelectedPatternNonZeroDebug() const { return ppu.debugSelectedPatternNonZero(); }
     std::size_t ppuPaletteNonZeroDebug() const { return ppu.debugPaletteNonZero(); }
 private:
     std::array<std::uint8_t, 2048> ram{};
