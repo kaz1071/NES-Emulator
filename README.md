@@ -14,8 +14,9 @@ The project is in early development. It currently has an SDL2 application, an iN
 - [x] Trainer offset and mirroring detection
 - [x] Initial 6502 CPU registers, reset vector, RAM mirroring, and a growing starter instruction set
 - [x] Initial CPU memory bus with mirrored RAM, PRG-RAM, and NROM PRG-ROM mapping
-- [ ] PPU register integration and full Ricoh 2A03 instruction/timing support
-- [ ] PPU graphics
+- [x] Initial PPU registers, CHR access, nametable/palette memory, and mirroring
+- [ ] PPU rendering and full Ricoh 2A03 instruction/timing support
+- [ ] PPU graphics and frame timing
 - [ ] Controller input
 - [ ] APU audio
 - [ ] Linux release build
@@ -55,13 +56,13 @@ Load a compatible standard iNES NROM ROM:
 ./build/nes-emulator /path/to/game.nes
 ```
 
-The current loader supports mapper 0 cartridges with 16 or 32 KiB of PRG-ROM and either 8 KiB of CHR-ROM or CHR-RAM. NES 2.0 headers and other mappers are not supported yet. A successfully loaded ROM is reported in the terminal, and the CPU reset vector is read from the cartridge. The CPU now accesses memory through an initial NES bus. The bus maps mirrored 2 KiB RAM, an 8 KiB PRG-RAM window, and NROM PRG-ROM. PPU, APU, controller, and expansion-area accesses are placeholders; the CPU is not yet connected to a timed NES system loop, and graphics are not implemented.
+The current loader supports mapper 0 cartridges with 16 or 32 KiB of PRG-ROM and either 8 KiB of CHR-ROM or CHR-RAM. NES 2.0 headers and other mappers are not supported yet. A successfully loaded ROM is reported in the terminal, and the CPU reset vector is read from the cartridge. The CPU now accesses memory through an initial NES bus. The bus maps mirrored 2 KiB RAM, an 8 KiB PRG-RAM window, and NROM PRG-ROM. The initial PPU now handles CPU register access, CHR-ROM/CHR-RAM, nametable and palette memory, and cartridge nametable mirroring. Sprite/background rendering, frame timing, vblank timing, and NMI are not implemented yet. APU, controller, and expansion-area accesses remain placeholders; the CPU is not yet connected to a timed NES system loop.
 
 Press **Escape** to close the window.
 
 ## Project direction
 
-The emulator core is being implemented in this repository rather than wrapping an existing emulator. We are starting with NROM (mapper 0), then completing CPU instruction/timing support, integrating the PPU, controllers, and audio.
+The emulator core is being implemented in this repository rather than wrapping an existing emulator. We are starting with NROM (mapper 0), then completing CPU instruction/timing support and PPU rendering, followed by controllers and audio.
 
 ## Contributions
 
