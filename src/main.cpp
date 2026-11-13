@@ -344,7 +344,8 @@ int main(int argc, char** argv) {
                       << "," << bus.ppuNametableTableNonZeroDebug(2)
                       << "," << bus.ppuNametableTableNonZeroDebug(3) << "] chr-nonzero=" << bus.ppuChrNonZeroDebug()
                       << "/8192 selected-pattern-nonzero=" << bus.ppuSelectedPatternNonZeroDebug()
-                      << "/4096 table1-first16=[";
+                      << "/4096 tile36-pixels=" << bus.ppuTileNonZeroPixelsDebug(36, (bus.ppuControlDebug() & 0x10) ? 0x1000 : 0x0000)
+                      << "/64 table1-first16=[";
             for (std::size_t i = 0; i < 16; ++i) {
                 if (i) std::cout << ",";
                 std::cout << static_cast<int>(bus.ppuNametableByteDebug(1, i));
