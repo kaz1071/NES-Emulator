@@ -21,6 +21,7 @@ void PPU2C02::reset() {
     nmiPending = false;
     vblankEvents = 0;
     vblankStatusReads = 0;
+    lastStatusRead = 0;
 }
 
 void PPU2C02::clock() {
@@ -239,6 +240,7 @@ std::uint8_t PPU2C02::cpuRead(std::uint16_t registerAddress) {
     if (reg == 2) {
         if (status & 0x80) ++vblankStatusReads;
         value = static_cast<std::uint8_t>((status & 0xE0) | (openBus & 0x1F));
+        lastStatusRead = value;
         status &= 0x7F;
         writeSecond = false;
     } else if (reg == 4) {
