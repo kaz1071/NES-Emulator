@@ -93,16 +93,23 @@ bool CPU6502::step() {
 
     const std::uint8_t opcode = fetch();
     switch (opcode) {
-        // Loads
-        case 0xA9: a = fetch(); break; case 0xA5: a = read(zp()); break;
-        case 0xB5: a = read(zpx()); break; case 0xAD: a = read(fetchWord()); break;
-        case 0xBD: a = read(absx()); break; case 0xB9: a = read(absy()); break;
-        case 0xA2: x = fetch(); break; case 0xA6: x = read(zp()); break;
-        case 0xB6: x = read(zpy()); break; case 0xAE: x = read(fetchWord()); break;
-        case 0xBE: x = read(absy()); break;
-        case 0xA0: y = fetch(); break; case 0xA4: y = read(zp()); break;
-        case 0xB4: y = read(zpx()); break; case 0xAC: y = read(fetchWord()); break;
-        case 0xBC: y = read(absx()); break;
+        // Loads (all LDA/LDX/LDY forms update Zero and Negative flags)
+        case 0xA9: a = fetch(); setZeroNegative(a); break;
+        case 0xA5: a = read(zp()); setZeroNegative(a); break;
+        case 0xB5: a = read(zpx()); setZeroNegative(a); break;
+        case 0xAD: a = read(fetchWord()); setZeroNegative(a); break;
+        case 0xBD: a = read(absx()); setZeroNegative(a); break;
+        case 0xB9: a = read(absy()); setZeroNegative(a); break;
+        case 0xA2: x = fetch(); setZeroNegative(x); break;
+        case 0xA6: x = read(zp()); setZeroNegative(x); break;
+        case 0xB6: x = read(zpy()); setZeroNegative(x); break;
+        case 0xAE: x = read(fetchWord()); setZeroNegative(x); break;
+        case 0xBE: x = read(absy()); setZeroNegative(x); break;
+        case 0xA0: y = fetch(); setZeroNegative(y); break;
+        case 0xA4: y = read(zp()); setZeroNegative(y); break;
+        case 0xB4: y = read(zpx()); setZeroNegative(y); break;
+        case 0xAC: y = read(fetchWord()); setZeroNegative(y); break;
+        case 0xBC: y = read(absx()); setZeroNegative(y); break;
 
         // Stores
         case 0x85: write(zp(), a); break; case 0x95: write(zpx(), a); break;
