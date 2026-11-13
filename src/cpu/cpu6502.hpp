@@ -10,6 +10,7 @@ public:
     void connectBus(NESBus* bus);
     void reset();
     bool step();
+    int lastStepCycles() const;
 
     std::uint8_t a = 0, x = 0, y = 0;
     std::uint8_t sp = 0xFD;
@@ -33,6 +34,7 @@ private:
 
     NESBus* bus = nullptr;
     bool isHalted = false;
+    int lastStepCycleCount = 0;
     std::string lastError;
     std::array<std::uint16_t, 16> traceAddresses{};
     std::array<std::uint8_t, 16> traceOpcodes{};
