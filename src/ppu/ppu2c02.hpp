@@ -21,6 +21,7 @@ public:
     std::uint8_t debugPaletteByte(std::size_t index) const;
     std::size_t debugChrNonZero() const;
     std::size_t debugSelectedPatternNonZero() const;
+    std::size_t debugTileNonZeroPixels(std::uint8_t tile, std::uint16_t patternBase) const;
     std::size_t debugPaletteNonZero() const;
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
