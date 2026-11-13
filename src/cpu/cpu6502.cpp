@@ -5,7 +5,7 @@ void CPU6502::connectBus(NESBus* connectedBus) {
     bus = connectedBus;
 }
 
-std::uint8_t CPU6502::read(std::uint16_t address) const {
+std::uint8_t CPU6502::read(std::uint16_t address) {
     return bus != nullptr ? bus->read(address) : 0;
 }
 
