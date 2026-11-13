@@ -21,7 +21,7 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     }
 
     std::vector<std::uint8_t> bytes(
-        std::istreambuf_iterator<char>(file),
+        (std::istreambuf_iterator<char>(file)),
         std::istreambuf_iterator<char>()
     );
 
