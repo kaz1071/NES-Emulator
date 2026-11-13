@@ -72,10 +72,10 @@ std::string chooseRomFile() {
 }
 
 void drawLoadButton(SDL_Renderer* renderer) {
-    SDL_Rect button{16, 8, 144, 32};
-    SDL_SetRenderDrawColor(renderer, 54, 91, 145, 255);
+    SDL_Rect button{312, 8, 144, 32};
+    SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
     SDL_RenderFillRect(renderer, &button);
-    SDL_SetRenderDrawColor(renderer, 150, 190, 245, 255);
+    SDL_SetRenderDrawColor(renderer, 210, 210, 210, 255);
     SDL_RenderDrawRect(renderer, &button);
 
     // Tiny built-in 5x7 font for the LOAD ROM button.
@@ -88,7 +88,7 @@ void drawLoadButton(SDL_Renderer* renderer) {
     }};
     const std::array<int, 8> letters{{0,1,2,3,7,4,1,6}}; // LOAD ROM
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    int x = 29;
+    int x = 325;
     for (int glyph : letters) {
         for (int y = 0; y < 7; ++y)
             for (int col = 0; col < 5; ++col)
@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
             if (event.type == SDL_QUIT) running = false;
             if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) running = false;
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT &&
-                event.button.x >= 16 && event.button.x < 160 &&
+                event.button.x >= 312 && event.button.x < 456 &&
                 event.button.y >= 8 && event.button.y < 40) {
                 const std::string selected = chooseRomFile();
                 if (!selected.empty()) {
