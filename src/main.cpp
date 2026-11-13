@@ -337,6 +337,21 @@ int main(int argc, char** argv) {
                       << " STATUS=$" << static_cast<int>(bus.ppuStatusDebug())
                       << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
                       << std::dec << '\n';
+            std::array<std::uint32_t, 64> observedColors{};
+            std::size_t colorCount = 0;
+            std::size_t nonBlackPixels = 0;
+            for (const std::uint32_t pixel : frame) {
+                if ((pixel & 0x00FFFFFF) != 0) ++nonBlackPixels;
+                bool known = false;
+                for (std::size_t i = 0; i < colorCount; ++i) {
+                    if (observedColors[i] == pixel) { known = true; break; }
+                }
+                if (!known && colorCount < observedColors.size())
+                    observedColors[colorCount++] = pixel;
+            }
+            std::cout << "Frame debug: unique-colors=" << colorCount
+                      << " non-black-pixels=" << nonBlackPixels << "/"
+                      << frame.size() << '\n';
             instructionsSinceDiagnostic = 0;
             lastCpuDiagnostic = diagnosticNow;
         }
