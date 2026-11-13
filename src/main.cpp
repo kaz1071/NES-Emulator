@@ -339,7 +339,10 @@ int main(int argc, char** argv) {
                       << " STATUS=$" << static_cast<int>(bus.ppuStatusDebug())
                       << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
                       << std::dec << " nametable-nonzero=" << bus.ppuNametableNonZeroDebug()
-                      << "/4096 chr-nonzero=" << bus.ppuChrNonZeroDebug()
+                      << "/4096 nametable-tables=[" << bus.ppuNametableTableNonZeroDebug(0)
+                      << "," << bus.ppuNametableTableNonZeroDebug(1)
+                      << "," << bus.ppuNametableTableNonZeroDebug(2)
+                      << "," << bus.ppuNametableTableNonZeroDebug(3) << "] chr-nonzero=" << bus.ppuChrNonZeroDebug()
                       << "/8192 selected-pattern-nonzero=" << bus.ppuSelectedPatternNonZeroDebug()
                       << "/4096 palette-nonzero=" << bus.ppuPaletteNonZeroDebug()
                       << "/32\n";
