@@ -64,6 +64,17 @@ void CPU6502::reset() {
 bool CPU6502::step() {
     if (isHalted) return false;
 
+    if (bus != nullptr && bus->consumeNmi()) {
+        push(static_cast<std::uint8_t>((pc >> 8) & 0xFF));
+        push(static_cast<std::uint8_t>(pc & 0xFF));
+        push(static_cast<std::uint8_t>((status & ~FLAG_BREAK) | FLAG_UNUSED));
+        setFlag(FLAG_INTERRUPT, true);
+        const std::uint8_t low = read(0xFFFA);
+        const std::uint8_t high = read(0xFFFB);
+        pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
+        return true;
+    }
+
     const auto fetch = [this]() { return read(pc++); };
     const auto fetchWord = [&fetch]() {
         const std::uint8_t low = fetch();
