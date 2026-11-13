@@ -31,7 +31,7 @@ private:
     bool isHalted = false;
     std::string lastError;
 
-    std::uint8_t read(std::uint16_t address) const;
+    std::uint8_t read(std::uint16_t address);
     void write(std::uint16_t address, std::uint8_t value);
     void setFlag(std::uint8_t flag, bool value);
     bool getFlag(std::uint8_t flag) const;
