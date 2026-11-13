@@ -336,7 +336,10 @@ int main(int argc, char** argv) {
                       << " MASK=$" << static_cast<int>(bus.ppuMaskDebug())
                       << " STATUS=$" << static_cast<int>(bus.ppuStatusDebug())
                       << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
-                      << std::dec << '\n';
+                      << std::dec << " nametable-nonzero=" << bus.ppuNametableNonZeroDebug()
+                      << "/4096 chr-nonzero=" << bus.ppuChrNonZeroDebug()
+                      << "/8192 palette-nonzero=" << bus.ppuPaletteNonZeroDebug()
+                      << "/32\n";
             std::array<std::uint32_t, 64> observedColors{};
             std::size_t colorCount = 0;
             std::size_t nonBlackPixels = 0;
