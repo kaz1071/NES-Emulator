@@ -69,3 +69,11 @@ The emulator core is being implemented in this repository rather than wrapping a
 ## Contributions
 
 Issues and suggestions are welcome while the project is being developed.
+
+
+## Version 0.9.0
+
+- Added basic background scrolling from PPUSCROLL writes across logical nametables.
+- Added 8x8 and 8x16 sprite rendering from OAM and CHR data.
+- Supports horizontal/vertical sprite flipping, transparent sprite pixels, background priority, and up to eight visible sprites.
+- CPU game execution, PPU frame timing/vblank/NMI, sprite-zero hit, and full hardware accuracy are not implemented yet.
