@@ -77,3 +77,11 @@ Issues and suggestions are welcome while the project is being developed.
 - Added 8x8 and 8x16 sprite rendering from OAM and CHR data.
 - Supports horizontal/vertical sprite flipping, transparent sprite pixels, background priority, and up to eight visible sprites.
 - CPU game execution, PPU frame timing/vblank/NMI, sprite-zero hit, and full hardware accuracy are not implemented yet.
+
+
+## Version 0.10.0
+
+- Added an experimental CPU execution loop when a cartridge is supplied.
+- Executes up to 30,000 supported CPU instructions per displayed frame.
+- Unsupported opcodes and BRK stop the CPU cleanly and print a diagnostic.
+- This is instruction-budget pacing, not cycle-accurate timing. The 6502 instruction set is incomplete, and PPU scanline timing, vblank/NMI, APU, controllers, DMA, and mapper support remain incomplete. Commercial games are not expected to run correctly yet.
