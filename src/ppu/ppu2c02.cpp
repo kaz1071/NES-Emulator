@@ -44,9 +44,7 @@ std::uint8_t PPU2C02::mapPaletteAddress(std::uint16_t address) {
 std::uint8_t PPU2C02::ppuRead(std::uint16_t address) const {
     address &= 0x3FFF;
     if (address < 0x2000) {
-        if (cartridge != nullptr && !cartridge->chrData.empty()) {
-            return cartridge->chrData[address % cartridge->chrData.size()];
-        }
+        if (cartridge != nullptr) return cartridge->readChr(address);
         return 0;
     }
     if (address < 0x3F00) {
@@ -58,10 +56,7 @@ std::uint8_t PPU2C02::ppuRead(std::uint16_t address) const {
 void PPU2C02::ppuWrite(std::uint16_t address, std::uint8_t value) {
     address &= 0x3FFF;
     if (address < 0x2000) {
-        if (cartridge != nullptr && cartridge->usesChrRam &&
-            address < cartridge->chrData.size()) {
-            cartridge->chrData[address] = value;
-        }
+        if (cartridge != nullptr) cartridge->writeChr(address, value);
         return;
     }
     if (address < 0x3F00) {
