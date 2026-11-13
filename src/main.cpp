@@ -387,6 +387,11 @@ int main(int argc, char** argv) {
                 if (i) std::cout << ",";
                 std::cout << static_cast<int>(bus.ppuNametableByteDebug(1, i));
             }
+            std::cout << "] table1-attributes=[";
+            for (std::size_t i = 0; i < 64; ++i) {
+                if (i) std::cout << ",";
+                std::cout << static_cast<int>(bus.ppuNametableByteDebug(1, 0x3C0 + i));
+            }
             std::cout << "] palette=[";
             for (std::size_t i = 0; i < 32; ++i) {
                 if (i) std::cout << ",";
