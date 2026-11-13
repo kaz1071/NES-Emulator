@@ -14,6 +14,10 @@ void NESBus::reset() {
     ppu.reset();
 }
 
+void NESBus::clockPpu() {
+    ppu.clock();
+}
+
 void NESBus::setControllerState(std::uint8_t port, std::uint8_t buttons) {
     if (port < controllerState.size()) {
         controllerState[port] = buttons;
