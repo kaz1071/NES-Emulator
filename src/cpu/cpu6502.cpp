@@ -159,6 +159,13 @@ bool CPU6502::step() {
         case 0x68: a = pop(); setZeroNegative(a); break;
         case 0x08: push(static_cast<std::uint8_t>(status | FLAG_BREAK | FLAG_UNUSED)); break;
         case 0x28: status = static_cast<std::uint8_t>((pop() | FLAG_UNUSED) & ~FLAG_BREAK); break;
+        case 0x40: {
+            status = static_cast<std::uint8_t>((pop() | FLAG_UNUSED) & ~FLAG_BREAK);
+            const std::uint8_t low = pop();
+            const std::uint8_t high = pop();
+            pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
+            break;
+        }
 
         case 0x4C: pc = fetchWord(); break;
         case 0xEA: break;
