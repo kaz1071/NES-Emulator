@@ -1,13 +1,11 @@
 #pragma once
-
-#include "../cartridge/cartridge.hpp"
-#include <array>
+#include "../bus/bus.hpp"
 #include <cstdint>
 #include <string>
 
 class CPU6502 {
 public:
-    void connectCartridge(const Cartridge* cartridge);
+    void connectBus(NESBus* bus);
     void reset();
     bool step();
 
@@ -29,8 +27,7 @@ private:
     static constexpr std::uint8_t FLAG_OVERFLOW = 0x40;
     static constexpr std::uint8_t FLAG_NEGATIVE = 0x80;
 
-    std::array<std::uint8_t, 2048> ram{};
-    const Cartridge* cartridge = nullptr;
+    NESBus* bus = nullptr;
     bool isHalted = false;
     std::string lastError;
 
