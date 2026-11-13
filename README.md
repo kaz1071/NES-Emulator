@@ -16,6 +16,7 @@ The project is in early development. It currently has an SDL2 application, an iN
 - [x] Initial CPU memory bus with mirrored RAM, PRG-RAM, and NROM PRG-ROM mapping
 - [x] Initial PPU registers, CHR access, nametable/palette memory, and mirroring
 - [x] Initial 256×240 background tile renderer and SDL texture output
+- [x] Diagnostic NES-palette test pattern while the PPU background is disabled
 - [ ] Scrolling, sprites, PPU timing/NMI, and full Ricoh 2A03 instruction/timing support
 - [ ] Complete PPU graphics and frame timing
 - [ ] Controller input
@@ -57,7 +58,7 @@ Load a compatible standard iNES NROM ROM:
 ./build/nes-emulator /path/to/game.nes
 ```
 
-The current loader supports mapper 0 cartridges with 16 or 32 KiB of PRG-ROM and either 8 KiB of CHR-ROM or CHR-RAM. NES 2.0 headers and other mappers are not supported yet. A successfully loaded ROM is reported in the terminal, and the CPU reset vector is read from the cartridge. The CPU now accesses memory through an initial NES bus. The bus maps mirrored 2 KiB RAM, an 8 KiB PRG-RAM window, and NROM PRG-ROM. The initial PPU now handles CPU register access, CHR-ROM/CHR-RAM, nametable and palette memory, and cartridge nametable mirroring. A first static 256×240 background tile renderer now draws nametable tiles, attribute palettes, and pattern-table pixels into the SDL window. Scrolling, sprites, frame timing, vblank timing, and NMI are not implemented yet. The CPU is still not running game code, so this is a renderer foundation rather than playable gameplay. APU, controller, and expansion-area accesses remain placeholders; the CPU is not yet connected to a timed NES system loop.
+The current loader supports mapper 0 cartridges with 16 or 32 KiB of PRG-ROM and either 8 KiB of CHR-ROM or CHR-RAM. NES 2.0 headers and other mappers are not supported yet. A successfully loaded ROM is reported in the terminal, and the CPU reset vector is read from the cartridge. The CPU now accesses memory through an initial NES bus. The bus maps mirrored 2 KiB RAM, an 8 KiB PRG-RAM window, and NROM PRG-ROM. The initial PPU now handles CPU register access, CHR-ROM/CHR-RAM, nametable and palette memory, and cartridge nametable mirroring. A first static 256×240 background tile renderer now draws nametable tiles, attribute palettes, and pattern-table pixels into the SDL window. While the PPU background is disabled (the startup state until game code runs), the window displays a diagnostic pattern using the NES color palette instead of appearing blank. Scrolling, sprites, frame timing, vblank timing, and NMI are not implemented yet. The CPU is still not running game code, so this is a renderer foundation rather than playable gameplay. APU, controller, and expansion-area accesses remain placeholders; the CPU is not yet connected to a timed NES system loop.
 
 Press **Escape** to close the window.
 
