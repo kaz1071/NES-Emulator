@@ -1,22 +1,16 @@
 #include "cpu6502.hpp"
-#include <cstddef>
 #include <cstdint>
 
-void CPU6502::connectCartridge(const Cartridge* loadedCartridge) {
-    cartridge = loadedCartridge;
+void CPU6502::connectBus(NESBus* connectedBus) {
+    bus = connectedBus;
 }
 
 std::uint8_t CPU6502::read(std::uint16_t address) const {
-    if (address < 0x2000) return ram[address & 0x07FF];
-    if (address >= 0x8000 && cartridge != nullptr && !cartridge->prgRom.empty()) {
-        const std::size_t offset = static_cast<std::size_t>(address - 0x8000) % cartridge->prgRom.size();
-        return cartridge->prgRom[offset];
-    }
-    return 0;
+    return bus != nullptr ? bus->read(address) : 0;
 }
 
 void CPU6502::write(std::uint16_t address, std::uint8_t value) {
-    if (address < 0x2000) ram[address & 0x07FF] = value;
+    if (bus != nullptr) bus->write(address, value);
 }
 
 void CPU6502::setFlag(std::uint8_t flag, bool value) {
@@ -62,7 +56,6 @@ void CPU6502::reset() {
     status = FLAG_UNUSED | FLAG_INTERRUPT;
     isHalted = false;
     lastError.clear();
-    ram.fill(0);
     const std::uint8_t low = read(0xFFFC);
     const std::uint8_t high = read(0xFFFD);
     pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
