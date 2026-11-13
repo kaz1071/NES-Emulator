@@ -74,7 +74,7 @@ The emulator core is being implemented in this repository rather than wrapping a
 - Preserved the NES color palette for actual game graphics.
 
 
-Version 0.17.0 adds an approximate PPU clock (341 dots × 262 scanlines) and updates the PPUSTATUS vblank flag, which allows games that poll vblank to make progress. This is not cycle-accurate and NMI delivery is not implemented yet.
+Version 0.17.0 added an approximate PPU clock (341 dots × 262 scanlines) and PPUSTATUS vblank flag. Version 0.19.0 adds the initial NMI delivery path. Neither implementation is cycle-accurate.
 
 
 Version 0.18.0 updates the window controls: Escape no longer exits the emulator, a centered FULLSCREEN button toggles desktop fullscreen, F11 is a fullscreen shortcut, and QUIT remains the explicit exit control. The NES picture scales to fit the available window while preserving its aspect ratio.
