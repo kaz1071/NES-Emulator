@@ -362,6 +362,16 @@ int main(int argc, char** argv) {
                 if (i) std::cout << ",";
                 std::cout << pixelValueCounts[i];
             }
+            std::cout << "] palette-slot-usage=[";
+            const auto paletteSlotCounts = bus.ppuVisiblePaletteSlotCountsDebug();
+            bool firstPaletteSlot = true;
+            for (std::size_t i = 0; i < paletteSlotCounts.size(); ++i) {
+                if (paletteSlotCounts[i] != 0) {
+                    if (!firstPaletteSlot) std::cout << ",";
+                    std::cout << i << ":" << paletteSlotCounts[i];
+                    firstPaletteSlot = false;
+                }
+            }
             std::cout << "] palette-index-usage=[";
             const auto paletteIndexCounts = bus.ppuVisiblePaletteIndexCountsDebug();
             bool firstPaletteIndex = true;
