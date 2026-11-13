@@ -3,6 +3,7 @@
 #include "../cartridge/cartridge.hpp"
 #include <array>
 #include <cstdint>
+#include <cstddef>
 
 class PPU2C02 {
 public:
@@ -14,6 +15,9 @@ public:
     std::uint8_t debugMask() const { return mask; }
     std::uint8_t debugStatus() const { return status; }
     std::uint8_t debugPalette() const { return paletteRam[0]; }
+    std::size_t debugNametableNonZero() const;
+    std::size_t debugChrNonZero() const;
+    std::size_t debugPaletteNonZero() const;
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
