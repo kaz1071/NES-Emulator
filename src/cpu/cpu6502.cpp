@@ -154,6 +154,15 @@ bool CPU6502::step() {
             break;
         }
 
+        // Increment/decrement memory
+        case 0xE6: {
+            const auto address = zp();
+            const auto value = static_cast<std::uint8_t>(read(address) + 1);
+            write(address, value);
+            setZeroNegative(value);
+            break;
+        }
+
         // Zero-page arithmetic
         case 0x65: adc(read(zp())); break;
 
