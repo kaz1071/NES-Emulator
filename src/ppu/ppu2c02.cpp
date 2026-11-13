@@ -399,24 +399,27 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     // The NES limit is eight sprites per scanline, not eight per frame.
     // Count each sprite on every visible scanline it overlaps.
     std::array<std::uint8_t, 240> spritesOnLine{};
+    std::array<std::array<bool, 240>, 64> spriteRowAllowed{};
+    // Select the first eight OAM sprites independently on each scanline.
     for (int s = 0; s < 64; ++s) {
-        const std::uint8_t rawY = oam[s * 4], tile = oam[s * 4 + 1], attr = oam[s * 4 + 2];
-        const int sx = oam[s * 4 + 3], sy = static_cast<int>(rawY) + 1;
+        const int sy = static_cast<int>(oam[s * 4]) + 1;
         if (sy >= 240 || sy + height <= 0) continue;
-        std::array<bool, 240> spriteRowAllowed{};
-        bool visibleOnAllowedLine = false;
         for (int row = 0; row < height; ++row) {
             const int py = sy + row;
             if (py >= 0 && py < 240 && spritesOnLine[py] < 8) {
                 ++spritesOnLine[py];
-                spriteRowAllowed[py] = true;
-                visibleOnAllowedLine = true;
+                spriteRowAllowed[s][py] = true;
             }
         }
-        if (!visibleOnAllowedLine) continue;
+    }
+    // Draw lower-priority sprites first so lower OAM indices win overlaps.
+    for (int s = 63; s >= 0; --s) {
+        const std::uint8_t rawY = oam[s * 4], tile = oam[s * 4 + 1], attr = oam[s * 4 + 2];
+        const int sx = oam[s * 4 + 3], sy = static_cast<int>(rawY) + 1;
+        if (sy >= 240 || sy + height <= 0) continue;
         for (int row = 0; row < height; ++row) {
             const int py = sy + row;
-            if (py < 0 || py >= 240 || !spriteRowAllowed[py]) continue;
+            if (py < 0 || py >= 240 || !spriteRowAllowed[s][py]) continue;
             const int sourceY = (attr & 0x80) ? height - 1 - row : row;
             std::uint16_t pat;
             if (tall) pat = static_cast<std::uint16_t>((tile & 1) * 0x1000 + ((tile & 0xFE) + sourceY / 8) * 16 + (sourceY & 7));
