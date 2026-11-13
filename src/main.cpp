@@ -333,13 +333,16 @@ int main(int argc, char** argv) {
                       << " Y=$" << static_cast<int>(cpu.y)
                       << " P=$" << static_cast<int>(cpu.status)
                       << std::dec << " instructions/2s=" << instructionsSinceDiagnostic
-                      << " halted=" << (cpu.halted() ? "yes" : "no") << '\n'
+                      << " halted=" << (cpu.halted() ? "yes" : "no")
+                      << " wait-bytes=[" << static_cast<int>(bus.read(0x8505)) << ","
+                      << static_cast<int>(bus.read(0x8506)) << "," << static_cast<int>(bus.read(0x8508)) << "]" << '\n'
                       << "PPU debug: CTRL=$" << std::hex << static_cast<int>(bus.ppuControlDebug())
                       << " MASK=$" << static_cast<int>(bus.ppuMaskDebug())
                       << " STATUS=$" << static_cast<int>(bus.ppuStatusDebug())
                       << std::dec << " position=" << bus.ppuScanlineDebug() << ":" << bus.ppuCycleDebug()
                       << " vblank-events=" << bus.ppuVblankEventsDebug()
                       << " vblank-status-reads=" << bus.ppuVblankStatusReadsDebug()
+                      << " last-status-read=$" << static_cast<int>(bus.ppuLastStatusReadDebug())
                       << std::hex
                       << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
                       << std::dec << " nametable-nonzero=" << bus.ppuNametableNonZeroDebug()
