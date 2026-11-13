@@ -224,6 +224,16 @@ bool CPU6502::step() {
                 (low | (static_cast<std::uint16_t>(high) << 8)) + 1);
             break;
         }
+        case 0x6C: {
+            const std::uint16_t pointer = fetchWord();
+            const std::uint8_t low = read(pointer);
+            // The original 6502 wraps the high-byte fetch within the same page.
+            const std::uint16_t highAddress = static_cast<std::uint16_t>(
+                (pointer & 0xFF00) | static_cast<std::uint8_t>(pointer + 1));
+            const std::uint8_t high = read(highAddress);
+            pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
+            break;
+        }
         case 0x4C: pc = fetchWord(); break;
         case 0xEA: break;
         case 0x00:
