@@ -2,6 +2,7 @@
 
 #include "cartridge/cartridge.hpp"
 #include "cpu/cpu6502.hpp"
+#include "bus/bus.hpp"
 
 #include <filesystem>
 #include <iostream>
@@ -44,8 +45,12 @@ int main(int argc, char** argv) {
                   << "CHR: " << (cartridge.usesChrRam ? "8 KiB CHR-RAM" : "8 KiB CHR-ROM") << '\n'
                   << "Mirroring: " << mirroringName(cartridge.mirroring) << '\n';
 
+        NESBus bus;
+        bus.connectCartridge(&cartridge);
+        bus.reset();
+
         CPU6502 cpu;
-        cpu.connectCartridge(&cartridge);
+        cpu.connectBus(&bus);
         cpu.reset();
         std::cout << "CPU reset complete.\n"
                   << "6502 reset vector: $" << std::hex << cpu.pc
