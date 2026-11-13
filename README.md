@@ -8,7 +8,7 @@ The project is in early development. It currently includes an SDL2 application, 
 
 - [x] C++20 and CMake project setup
 - [x] SDL2 application window
-- [x] Centered monochrome **LOAD ROM** button
+- [x] Large centered **LOAD ROM** and **QUIT** buttons
 - [x] Linux desktop file picker
 - [x] Standard iNES header parsing
 - [x] NROM (mapper 0) PRG-ROM loading
@@ -49,7 +49,7 @@ Start the emulator:
 ./build/nes-emulator
 ```
 
-Click the centered **LOAD ROM** button and choose a `.nes` file. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
+Click the large centered **LOAD ROM** button and choose a `.nes` file. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
 
 ```bash
 ./build/nes-emulator /path/to/game.nes
@@ -63,8 +63,9 @@ The emulator core is being implemented in this repository rather than wrapping a
 
 Press **Escape** to close the window.
 
-## Version 0.12.0
+## Version 0.13.0
 
-- Centered the LOAD ROM button and changed its UI to grayscale.
+- Added large, vertically stacked LOAD ROM and QUIT buttons centered in the window.
+- Kept the menu buttons and text monochrome.
 - Removed the diagnostic color grid; the PPU output is black until background rendering is enabled.
 - Preserved the NES color palette for actual game graphics.
