@@ -343,6 +343,8 @@ int main(int argc, char** argv) {
                       << " vblank-events=" << bus.ppuVblankEventsDebug()
                       << " vblank-status-reads=" << bus.ppuVblankStatusReadsDebug()
                       << " last-status-read=$" << static_cast<int>(bus.ppuLastStatusReadDebug())
+                      << " scroll=[" << static_cast<int>(bus.ppuScrollXDebug())
+                      << "," << static_cast<int>(bus.ppuScrollYDebug()) << "]"
                       << std::hex
                       << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
                       << std::dec << " nametable-nonzero=" << bus.ppuNametableNonZeroDebug()
