@@ -20,6 +20,7 @@ public:
     std::uint8_t ppuStatusDebug() const { return ppu.debugStatus(); }
     std::uint64_t ppuVblankEventsDebug() const { return ppu.debugVblankEvents(); }
     std::uint64_t ppuVblankStatusReadsDebug() const { return ppu.debugVblankStatusReads(); }
+    std::uint8_t ppuLastStatusReadDebug() const { return ppu.debugLastStatusRead(); }
     int ppuScanlineDebug() const { return ppu.debugScanline(); }
     int ppuCycleDebug() const { return ppu.debugPpuCycle(); }
     std::uint8_t ppuPaletteDebug() const { return ppu.debugPalette(); }
