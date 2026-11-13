@@ -231,6 +231,17 @@ int main(int argc, char** argv) {
     std::array<std::uint32_t, NES_WIDTH * NES_HEIGHT> frame{};
     Uint32 lastCpuDiagnostic = SDL_GetTicks();
     std::uint64_t instructionsSinceDiagnostic = 0;
+
+    // An NTSC frame is 89,342 PPU dots. At 3 PPU dots per CPU
+    // cycle, frame lengths alternate between 29,780 and 29,781
+    // whole CPU cycles. Carry the remainder so timing does not drift.
+    int cpuCycleRemainder = 0;
+
+    // Pace the emulator at approximately 60 frames per second.
+    const Uint64 frameFrequency = SDL_GetPerformanceFrequency();
+    const Uint64 frameDuration = frameFrequency / 60;
+    Uint64 nextFrameTime = SDL_GetPerformanceCounter();
+
     bool running = true;
     bool fullscreen = false;
     while (running) {
@@ -305,9 +316,11 @@ int main(int argc, char** argv) {
         bus.setControllerState(0, controller1);
 
         if (hasCartridge && !cpu.halted()) {
-            // One NTSC frame is approximately 29,780 CPU cycles.
+            cpuCycleRemainder += 89342;
+            const int cpuCyclesTarget = cpuCycleRemainder / 3;
+            cpuCycleRemainder %= 3;
             int cpuCyclesThisFrame = 0;
-            while (cpuCyclesThisFrame < 29780 && !cpu.halted()) {
+            while (cpuCyclesThisFrame < cpuCyclesTarget && !cpu.halted()) {
                 if (!cpu.step()) {
                     if (!cpuStopReported) {
                         std::cerr << "CPU stopped: " << cpu.error() << '\n';
@@ -440,6 +453,22 @@ int main(int argc, char** argv) {
         SDL_RenderCopy(renderer, screen, nullptr, &gameArea);
         if (!hasCartridge) drawMenuButtons(renderer, outputWidth, outputHeight);
         SDL_RenderPresent(renderer);
+
+        // Keep game time close to real NTSC speed when the host can keep up.
+        nextFrameTime += frameDuration;
+        Uint64 now = SDL_GetPerformanceCounter();
+        if (now < nextFrameTime) {
+            const Uint64 remaining = nextFrameTime - now;
+            const Uint32 delayMs = static_cast<Uint32>(
+                (remaining * 1000) / frameFrequency);
+            if (delayMs > 0) SDL_Delay(delayMs);
+            while (SDL_GetPerformanceCounter() < nextFrameTime) {
+                SDL_Delay(0);
+            }
+        } else {
+            // Do not accumulate an ever-growing catch-up backlog on slow hosts.
+            nextFrameTime = now;
+        }
     }
 
     SDL_DestroyTexture(screen);
