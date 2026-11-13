@@ -403,18 +403,20 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
         const std::uint8_t rawY = oam[s * 4], tile = oam[s * 4 + 1], attr = oam[s * 4 + 2];
         const int sx = oam[s * 4 + 3], sy = static_cast<int>(rawY) + 1;
         if (sy >= 240 || sy + height <= 0) continue;
+        std::array<bool, 240> spriteRowAllowed{};
         bool visibleOnAllowedLine = false;
         for (int row = 0; row < height; ++row) {
             const int py = sy + row;
             if (py >= 0 && py < 240 && spritesOnLine[py] < 8) {
                 ++spritesOnLine[py];
+                spriteRowAllowed[py] = true;
                 visibleOnAllowedLine = true;
             }
         }
         if (!visibleOnAllowedLine) continue;
         for (int row = 0; row < height; ++row) {
             const int py = sy + row;
-            if (py < 0 || py >= 240) continue;
+            if (py < 0 || py >= 240 || !spriteRowAllowed[py]) continue;
             const int sourceY = (attr & 0x80) ? height - 1 - row : row;
             std::uint16_t pat;
             if (tall) pat = static_cast<std::uint16_t>((tile & 1) * 0x1000 + ((tile & 0xFE) + sourceY / 8) * 16 + (sourceY & 7));
