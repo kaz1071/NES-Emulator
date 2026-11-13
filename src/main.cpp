@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
 
     std::cout << "NES Emulator started. Use the QUIT button to exit; F11 toggles fullscreen.\n";
     if (hasCartridge)
-        std::cout << "Experimental CPU execution active (partial 6502 instruction set; not cycle-accurate).\n";
+        std::cout << "Experimental CPU execution active (official 6502 opcodes supported; timing is not cycle-accurate).\n";
 
     std::array<std::uint32_t, NES_WIDTH * NES_HEIGHT> frame{};
     Uint32 lastCpuDiagnostic = SDL_GetTicks();
@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
                         printCartridgeInfo(cartridge, path);
                         std::cout << "CPU reset complete. 6502 reset vector: $" << std::hex
                                   << cpu.pc << std::dec << '\n'
-                                  << "Experimental CPU execution active (partial 6502 instruction set; not cycle-accurate).\n";
+                                  << "Experimental CPU execution active (official 6502 opcodes supported; timing is not cycle-accurate).\n";
                         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
                             "ROM loaded", "The ROM file was loaded. Game compatibility is still experimental, so the screen may remain black if the game uses unsupported CPU instructions or PPU features.", window);
                     }
