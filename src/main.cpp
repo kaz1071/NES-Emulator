@@ -344,7 +344,17 @@ int main(int argc, char** argv) {
                       << "," << bus.ppuNametableTableNonZeroDebug(2)
                       << "," << bus.ppuNametableTableNonZeroDebug(3) << "] chr-nonzero=" << bus.ppuChrNonZeroDebug()
                       << "/8192 selected-pattern-nonzero=" << bus.ppuSelectedPatternNonZeroDebug()
-                      << "/4096 palette-nonzero=" << bus.ppuPaletteNonZeroDebug()
+                      << "/4096 table1-first16=[";
+            for (std::size_t i = 0; i < 16; ++i) {
+                if (i) std::cout << ",";
+                std::cout << static_cast<int>(bus.ppuNametableByteDebug(1, i));
+            }
+            std::cout << "] palette=[";
+            for (std::size_t i = 0; i < 32; ++i) {
+                if (i) std::cout << ",";
+                std::cout << static_cast<int>(bus.ppuPaletteByteDebug(i));
+            }
+            std::cout << "] palette-nonzero=" << bus.ppuPaletteNonZeroDebug()
                       << "/32\n";
             std::array<std::uint32_t, 64> observedColors{};
             std::size_t colorCount = 0;
