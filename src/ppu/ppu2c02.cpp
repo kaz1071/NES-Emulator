@@ -85,11 +85,7 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     };
     const std::uint32_t backdropColor = colors[ppuRead(0x3F00) & 0x3F];
     if ((mask & 0x08) == 0) {
-        for (int y = 0; y < 240; ++y) for (int x = 0; x < 256; ++x) {
-            const int paletteIndex = ((x / 32) * 8 + (y / 30)) & 0x3F;
-            pixels[static_cast<std::size_t>(y) * 256 + x] =
-                colors[((x % 8 == 0) || (y % 8 == 0)) ? 0x0F : paletteIndex];
-        }
+        pixels.fill(0xFF000000);
         return;
     }
     std::array<std::uint8_t, 256 * 240> backgroundOpaque{};
