@@ -241,6 +241,18 @@ int main(int argc, char** argv) {
             }
         }
 
+        const Uint8* keys = SDL_GetKeyboardState(nullptr);
+        std::uint8_t controller1 = 0;
+        if (keys[SDL_SCANCODE_Z]) controller1 |= 0x01;          // A
+        if (keys[SDL_SCANCODE_X]) controller1 |= 0x02;          // B
+        if (keys[SDL_SCANCODE_RSHIFT]) controller1 |= 0x04;     // Select
+        if (keys[SDL_SCANCODE_RETURN]) controller1 |= 0x08;     // Start
+        if (keys[SDL_SCANCODE_UP]) controller1 |= 0x10;
+        if (keys[SDL_SCANCODE_DOWN]) controller1 |= 0x20;
+        if (keys[SDL_SCANCODE_LEFT]) controller1 |= 0x40;
+        if (keys[SDL_SCANCODE_RIGHT]) controller1 |= 0x80;
+        bus.setControllerState(0, controller1);
+
         if (hasCartridge && !cpu.halted()) {
             for (int instruction = 0; instruction < 30000; ++instruction) {
                 if (!cpu.step()) {
