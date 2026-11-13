@@ -2,86 +2,68 @@
 
 A custom NES emulator built from scratch in C++ using SDL2, designed for Linux.
 
-The project is in early development. It currently has an SDL2 application, an iNES cartridge loader for NROM (mapper 0), and the first 6502 CPU foundation. CPU execution is not connected to the emulation loop yet.
+The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), an experimental partial 6502 CPU, and an initial PPU renderer.
 
 ## Current status
 
 - [x] C++20 and CMake project setup
 - [x] SDL2 application window
+- [x] In-window **LOAD ROM** button using the Linux desktop file picker
 - [x] Standard iNES header parsing
 - [x] NROM (mapper 0) PRG-ROM loading
 - [x] CHR-ROM loading and CHR-RAM allocation
 - [x] Trainer offset and mirroring detection
-- [x] Initial 6502 CPU registers, reset vector, RAM mirroring, and a growing starter instruction set
-- [x] Initial CPU memory bus with mirrored RAM, PRG-RAM, and NROM PRG-ROM mapping
-- [x] Initial PPU registers, CHR access, nametable/palette memory, and mirroring
-- [x] Initial 256×240 background tile renderer and SDL texture output
-- [x] Diagnostic NES-palette test pattern while the PPU background is disabled
-- [ ] Scrolling, sprites, PPU timing/NMI, and full Ricoh 2A03 instruction/timing support
-- [ ] Complete PPU graphics and frame timing
-- [ ] Controller input
-- [ ] APU audio
-- [ ] Linux release build
+- [x] Growing partial 6502 CPU instruction set
+- [x] Initial NES memory bus
+- [x] PPU registers, CHR access, nametable/palette memory, and mirroring
+- [x] 256×240 background renderer, basic scrolling, and sprites
+- [x] Experimental CPU instruction execution loop
+- [ ] Full 6502 instruction and cycle support
+- [ ] PPU frame timing, vblank, and NMI
+- [ ] Controller input and APU audio
+- [ ] Additional cartridge mappers
 
 ## Build on Linux
 
-Install the build tools and SDL2 development package:
+Install the build tools, SDL2 development package, and a file-picker utility:
 
 ```bash
 sudo apt update
-sudo apt install build-essential cmake pkg-config libsdl2-dev
+sudo apt install build-essential cmake pkg-config libsdl2-dev zenity
 ```
 
-Clone the repository:
+Clone and build:
 
 ```bash
 git clone https://github.com/kaz1071/NES-Emulator.git
 cd NES-Emulator
-```
-
-Configure and compile:
-
-```bash
 cmake -S . -B build
 cmake --build build -j$(nproc)
 ```
 
-Run the empty emulator window:
+Start the emulator:
 
 ```bash
 ./build/nes-emulator
 ```
 
-Load a compatible standard iNES NROM ROM:
+Click **LOAD ROM** in the top-left corner and choose a `.nes` file. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
 
 ```bash
 ./build/nes-emulator /path/to/game.nes
 ```
 
-The current loader supports mapper 0 cartridges with 16 or 32 KiB of PRG-ROM and either 8 KiB of CHR-ROM or CHR-RAM. NES 2.0 headers and other mappers are not supported yet. A successfully loaded ROM is reported in the terminal, and the CPU reset vector is read from the cartridge. The CPU now accesses memory through an initial NES bus. The bus maps mirrored 2 KiB RAM, an 8 KiB PRG-RAM window, and NROM PRG-ROM. The initial PPU now handles CPU register access, CHR-ROM/CHR-RAM, nametable and palette memory, and cartridge nametable mirroring. A first static 256×240 background tile renderer now draws nametable tiles, attribute palettes, and pattern-table pixels into the SDL window. While the PPU background is disabled (the startup state until game code runs), the window displays a diagnostic pattern using the NES color palette instead of appearing blank. Scrolling, sprites, frame timing, vblank timing, and NMI are not implemented yet. The CPU is still not running game code, so this is a renderer foundation rather than playable gameplay. APU, controller, and expansion-area accesses remain placeholders; the CPU is not yet connected to a timed NES system loop.
+## Compatibility notes
+
+The cartridge loader currently supports mapper 0 (NROM) with 16 or 32 KiB of PRG-ROM and either 8 KiB of CHR-ROM or CHR-RAM. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily playable yet: CPU instructions are incomplete, CPU pacing is not cycle-accurate, and PPU timing/vblank/NMI, controllers, DMA, and audio are not implemented. Commercial games are not expected to run correctly at this stage.
+
+The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
 Press **Escape** to close the window.
 
-## Project direction
+## Version 0.11.0
 
-The emulator core is being implemented in this repository rather than wrapping an existing emulator. We are starting with NROM (mapper 0), then completing CPU instruction/timing support and PPU rendering, followed by controllers and audio.
-
-## Contributions
-
-Issues and suggestions are welcome while the project is being developed.
-
-
-## Version 0.9.0
-
-- Added basic background scrolling from PPUSCROLL writes across logical nametables.
-- Added 8x8 and 8x16 sprite rendering from OAM and CHR data.
-- Supports horizontal/vertical sprite flipping, transparent sprite pixels, background priority, and up to eight visible sprites.
-- CPU game execution, PPU frame timing/vblank/NMI, sprite-zero hit, and full hardware accuracy are not implemented yet.
-
-
-## Version 0.10.0
-
-- Added an experimental CPU execution loop when a cartridge is supplied.
-- Executes up to 30,000 supported CPU instructions per displayed frame.
-- Unsupported opcodes and BRK stop the CPU cleanly and print a diagnostic.
-- This is instruction-budget pacing, not cycle-accurate timing. The 6502 instruction set is incomplete, and PPU scanline timing, vblank/NMI, APU, controllers, DMA, and mapper support remain incomplete. Commercial games are not expected to run correctly yet.
+- Added an in-window LOAD ROM button.
+- Opens the Linux desktop file chooser through Zenity, with KDialog as a fallback.
+- Loads a selected compatible ROM into the running emulator and resets the bus and CPU.
+- Retains command-line ROM loading.
