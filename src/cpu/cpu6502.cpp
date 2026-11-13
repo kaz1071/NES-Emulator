@@ -86,6 +86,13 @@ bool CPU6502::step() {
     const auto zpy = [this, &fetch]() { return static_cast<std::uint16_t>(static_cast<std::uint8_t>(fetch() + y)); };
     const auto absx = [this, &fetchWord]() { return static_cast<std::uint16_t>(fetchWord() + x); };
     const auto absy = [this, &fetchWord]() { return static_cast<std::uint16_t>(fetchWord() + y); };
+    const auto indy = [this, &fetch]() {
+        const std::uint8_t pointer = fetch();
+        const std::uint8_t low = read(pointer);
+        const std::uint8_t high = read(static_cast<std::uint8_t>(pointer + 1));
+        const std::uint16_t base = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
+        return static_cast<std::uint16_t>(base + y);
+    };
     const auto branch = [this, &fetch](bool condition) {
         const auto offset = static_cast<std::int8_t>(fetch());
         if (condition) pc = static_cast<std::uint16_t>(pc + offset);
@@ -100,6 +107,7 @@ bool CPU6502::step() {
         case 0xAD: a = read(fetchWord()); setZeroNegative(a); break;
         case 0xBD: a = read(absx()); setZeroNegative(a); break;
         case 0xB9: a = read(absy()); setZeroNegative(a); break;
+        case 0xB1: a = read(indy()); setZeroNegative(a); break;
         case 0xA2: x = fetch(); setZeroNegative(x); break;
         case 0xA6: x = read(zp()); setZeroNegative(x); break;
         case 0xB6: x = read(zpy()); setZeroNegative(x); break;
