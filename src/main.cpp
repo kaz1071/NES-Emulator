@@ -263,6 +263,9 @@ int main(int argc, char** argv) {
                     }
                     break;
                 }
+                bus.clockPpu();
+                bus.clockPpu();
+                bus.clockPpu();
             }
         }
 
