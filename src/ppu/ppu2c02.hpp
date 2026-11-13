@@ -14,6 +14,10 @@ public:
     std::uint8_t debugControl() const { return control; }
     std::uint8_t debugMask() const { return mask; }
     std::uint8_t debugStatus() const { return status; }
+    std::uint64_t debugVblankEvents() const { return vblankEvents; }
+    std::uint64_t debugVblankStatusReads() const { return vblankStatusReads; }
+    int debugScanline() const { return scanline; }
+    int debugPpuCycle() const { return ppuCycle; }
     std::uint8_t debugPalette() const { return paletteRam[0]; }
     std::size_t debugNametableNonZero() const;
     std::size_t debugNametableTableNonZero(std::size_t table) const;
@@ -52,6 +56,8 @@ private:
     int ppuCycle = 0;
     int scanline = 261;
     bool nmiPending = false;
+    std::uint64_t vblankEvents = 0;
+    std::uint64_t vblankStatusReads = 0;
 
     std::uint16_t mapNametableAddress(std::uint16_t address) const;
     static std::uint8_t mapPaletteAddress(std::uint16_t address);
