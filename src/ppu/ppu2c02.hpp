@@ -10,6 +10,10 @@ public:
     void reset();
     void clock();
     bool consumeNmi();
+    std::uint8_t debugControl() const { return control; }
+    std::uint8_t debugMask() const { return mask; }
+    std::uint8_t debugStatus() const { return status; }
+    std::uint8_t debugPalette() const { return paletteRam[0]; }
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
