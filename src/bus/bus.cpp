@@ -18,6 +18,10 @@ void NESBus::clockPpu() {
     ppu.clock();
 }
 
+bool NESBus::consumeNmi() {
+    return ppu.consumeNmi();
+}
+
 void NESBus::setControllerState(std::uint8_t port, std::uint8_t buttons) {
     if (port < controllerState.size()) {
         controllerState[port] = buttons;
