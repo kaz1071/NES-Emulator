@@ -190,6 +190,29 @@ std::size_t PPU2C02::debugTileNonZeroPixels(std::uint8_t tile, std::uint16_t pat
     return count;
 }
 
+std::array<std::size_t, 4> PPU2C02::debugVisiblePixelValueCounts() const {
+    std::array<std::size_t, 4> counts{};
+    const std::uint16_t tableBase = static_cast<std::uint16_t>(
+        0x2000 + (control & 0x03) * 0x400);
+    const std::uint16_t patternBase = (control & 0x10) ? 0x1000 : 0x0000;
+    for (int y = 0; y < 30 * 8; ++y) {
+        for (int x = 0; x < 32 * 8; ++x) {
+            const int tileX = x / 8, tileY = y / 8;
+            const auto tile = ppuRead(static_cast<std::uint16_t>(
+                tableBase + tileY * 32 + tileX));
+            const std::uint16_t address = static_cast<std::uint16_t>(
+                patternBase + tile * 16 + (y & 7));
+            const std::uint8_t lo = ppuRead(address);
+            const std::uint8_t hi = ppuRead(static_cast<std::uint16_t>(address + 8));
+            const int bit = 7 - (x & 7);
+            const std::uint8_t pixel = static_cast<std::uint8_t>(
+                ((lo >> bit) & 1) | (((hi >> bit) & 1) << 1));
+            ++counts[pixel];
+        }
+    }
+    return counts;
+}
+
 void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     static constexpr std::array<std::uint32_t, 64> colors = {
         0xFF666666,0xFF002A88,0xFF1412A7,0xFF3B00A4,0xFF5C007E,0xFF6E0040,0xFF6C0600,0xFF561D00,
