@@ -18,6 +18,10 @@ public:
     std::uint8_t ppuControlDebug() const { return ppu.debugControl(); }
     std::uint8_t ppuMaskDebug() const { return ppu.debugMask(); }
     std::uint8_t ppuStatusDebug() const { return ppu.debugStatus(); }
+    std::uint64_t ppuVblankEventsDebug() const { return ppu.debugVblankEvents(); }
+    std::uint64_t ppuVblankStatusReadsDebug() const { return ppu.debugVblankStatusReads(); }
+    int ppuScanlineDebug() const { return ppu.debugScanline(); }
+    int ppuCycleDebug() const { return ppu.debugPpuCycle(); }
     std::uint8_t ppuPaletteDebug() const { return ppu.debugPalette(); }
     std::size_t ppuNametableNonZeroDebug() const { return ppu.debugNametableNonZero(); }
     std::size_t ppuNametableTableNonZeroDebug(std::size_t table) const { return ppu.debugNametableTableNonZero(table); }
