@@ -37,3 +37,7 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
     }
     // APU/controller devices and cartridge PRG-ROM writes are not implemented.
 }
+
+void NESBus::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
+    ppu.renderFrame(pixels);
+}
