@@ -8,6 +8,7 @@ class NESBus {
 public:
     void connectCartridge(Cartridge* cartridge);
     void reset();
+    void clockPpu();
     std::uint8_t read(std::uint16_t address);
     void write(std::uint16_t address, std::uint8_t value);
     void setControllerState(std::uint8_t port, std::uint8_t buttons);
