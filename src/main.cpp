@@ -2,6 +2,7 @@
 #include "cartridge/cartridge.hpp"
 #include "cpu/cpu6502.hpp"
 #include "bus/bus.hpp"
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <iostream>
