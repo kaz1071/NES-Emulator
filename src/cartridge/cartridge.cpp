@@ -10,6 +10,45 @@ constexpr std::size_t HEADER_SIZE = 16;
 constexpr std::size_t TRAINER_SIZE = 512;
 constexpr std::size_t PRG_BANK_SIZE = 16 * 1024;
 constexpr std::size_t CHR_BANK_SIZE = 8 * 1024;
+constexpr std::size_t GXMROM_PRG_BANK_SIZE = 32 * 1024;
+}
+
+std::uint8_t Cartridge::readPrg(std::uint16_t address) const {
+    if (prgRom.empty() || address < 0x8000) return 0;
+    std::size_t offset = static_cast<std::size_t>(address - 0x8000);
+    if (mapper == 66) {
+        const std::size_t bankCount = prgRom.size() / GXMROM_PRG_BANK_SIZE;
+        if (bankCount == 0) return 0;
+        offset += (static_cast<std::size_t>(prgBank) % bankCount) * GXMROM_PRG_BANK_SIZE;
+    } else {
+        offset %= prgRom.size();
+    }
+    return prgRom[offset % prgRom.size()];
+}
+
+void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
+    if (mapper == 66 && address >= 0x8000) {
+        prgBank = static_cast<std::uint8_t>((value >> 4) & 0x03);
+        chrBank = static_cast<std::uint8_t>(value & 0x03);
+    }
+}
+
+std::uint8_t Cartridge::readChr(std::uint16_t address) const {
+    if (chrData.empty() || address >= 0x2000) return 0;
+    std::size_t offset = address;
+    if (mapper == 66 && !usesChrRam) {
+        const std::size_t bankCount = chrData.size() / CHR_BANK_SIZE;
+        if (bankCount != 0) {
+            offset += (static_cast<std::size_t>(chrBank) % bankCount) * CHR_BANK_SIZE;
+        }
+    }
+    return chrData[offset % chrData.size()];
+}
+
+void Cartridge::writeChr(std::uint16_t address, std::uint8_t value) {
+    if (usesChrRam && address < 0x2000 && address < chrData.size()) {
+        chrData[address] = value;
+    }
 }
 
 bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
@@ -47,9 +86,9 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::uint8_t mapper =
         static_cast<std::uint8_t>((flags6 >> 4) | (flags7 & 0xF0));
 
-    if (mapper != 0) {
+    if (mapper != 0 && mapper != 66) {
         error = "Unsupported mapper " + std::to_string(mapper) +
-                ". This early version supports mapper 0 (NROM) only.";
+                ". This version supports mapper 0 (NROM) and mapper 66 (GxROM).";
         return false;
     }
 
@@ -58,13 +97,24 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::size_t chrSize =
         static_cast<std::size_t>(bytes[5]) * CHR_BANK_SIZE;
 
-    if (prgSize != PRG_BANK_SIZE && prgSize != 2 * PRG_BANK_SIZE) {
+    if (mapper == 0 && prgSize != PRG_BANK_SIZE && prgSize != 2 * PRG_BANK_SIZE) {
         error = "Mapper 0 requires 1 or 2 PRG-ROM banks (16 or 32 KiB).";
         return false;
     }
+    if (mapper == 66 &&
+        (prgSize < GXMROM_PRG_BANK_SIZE ||
+         prgSize > 4 * GXMROM_PRG_BANK_SIZE ||
+         prgSize % GXMROM_PRG_BANK_SIZE != 0)) {
+        error = "Mapper 66 requires 1 to 4 complete 32 KiB PRG-ROM banks.";
+        return false;
+    }
 
-    if (chrSize > CHR_BANK_SIZE) {
+    if (mapper == 0 && chrSize > CHR_BANK_SIZE) {
         error = "Mapper 0 supports at most one 8 KiB CHR-ROM bank.";
+        return false;
+    }
+    if (mapper == 66 && chrSize > 4 * CHR_BANK_SIZE) {
+        error = "Mapper 66 supports at most four 8 KiB CHR-ROM banks.";
         return false;
     }
 
