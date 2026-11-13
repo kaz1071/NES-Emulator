@@ -1,20 +1,58 @@
 #include <SDL.h>
 
+#include "cartridge/cartridge.hpp"
+
+#include <filesystem>
 #include <iostream>
+#include <string>
 
 namespace {
 constexpr int WINDOW_WIDTH = 960;
 constexpr int WINDOW_HEIGHT = 720;
+
+const char* mirroringName(Mirroring mirroring) {
+    switch (mirroring) {
+        case Mirroring::Horizontal: return "Horizontal";
+        case Mirroring::Vertical: return "Vertical";
+        case Mirroring::FourScreen: return "Four-screen";
+    }
+    return "Unknown";
+}
 }
 
-int main(int, char**) {
+int main(int argc, char** argv) {
+    Cartridge cartridge;
+    bool hasCartridge = false;
+    std::string windowTitle = "NES Emulator";
+
+    if (argc > 1) {
+        std::string error;
+        const std::filesystem::path romPath(argv[1]);
+
+        if (!loadCartridge(romPath, cartridge, error)) {
+            std::cerr << "ROM loading failed: " << error << '\n';
+            return 1;
+        }
+
+        hasCartridge = true;
+        windowTitle += " - " + romPath.filename().string();
+
+        std::cout << "Cartridge loaded: " << romPath.filename().string() << '\n'
+                  << "Mapper: " << static_cast<int>(cartridge.mapper) << " (NROM)\n"
+                  << "PRG-ROM: " << cartridge.prgRom.size() / 1024 << " KiB\n"
+                  << "CHR: " << (cartridge.usesChrRam ? "8 KiB CHR-RAM" : "8 KiB CHR-ROM") << '\n'
+                  << "Mirroring: " << mirroringName(cartridge.mirroring) << '\n';
+    } else {
+        std::cout << "No ROM supplied. Start with: ./build/nes-emulator path/to/game.nes\n";
+    }
+
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << '\n';
         return 1;
     }
 
     SDL_Window* window = SDL_CreateWindow(
-        "NES Emulator",
+        windowTitle.c_str(),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH,
@@ -62,8 +100,12 @@ int main(int, char**) {
             }
         }
 
-        // Temporary background. The NES PPU will draw frames here later.
-        SDL_SetRenderDrawColor(renderer, 18, 22, 34, 255);
+        // The PPU will draw actual NES frames here in a later milestone.
+        if (hasCartridge) {
+            SDL_SetRenderDrawColor(renderer, 24, 38, 30, 255);
+        } else {
+            SDL_SetRenderDrawColor(renderer, 18, 22, 34, 255);
+        }
         SDL_RenderClear(renderer);
         SDL_RenderPresent(renderer);
     }
