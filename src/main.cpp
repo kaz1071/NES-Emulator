@@ -376,6 +376,12 @@ int main(int argc, char** argv) {
             std::cout << "Frame debug: unique-colors=" << colorCount
                       << " non-black-pixels=" << nonBlackPixels << "/"
                       << frame.size() << '\n';
+            std::cout << "CPU trace (oldest->newest):";
+            for (std::size_t i = 0; i < 16; ++i) {
+                std::cout << " $" << std::hex << cpu.debugTraceAddress(i)
+                          << ":" << static_cast<int>(cpu.debugTraceOpcode(i));
+            }
+            std::cout << std::dec << '\n';
             instructionsSinceDiagnostic = 0;
             lastCpuDiagnostic = diagnosticNow;
         }
