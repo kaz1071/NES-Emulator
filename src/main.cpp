@@ -356,7 +356,13 @@ int main(int argc, char** argv) {
                       << "/4096 tile36-pixels=" << bus.ppuTileNonZeroPixelsDebug(36, (bus.ppuControlDebug() & 0x10) ? 0x1000 : 0x0000)
                       << "/64 visible-unique-tiles=" << bus.ppuVisibleUniqueTilesDebug()
                       << " visible-pattern-pixels=" << bus.ppuVisiblePatternPixelsDebug()
-                      << " table1-first16=[";
+                      << " pixel-values=[";
+            const auto pixelValueCounts = bus.ppuVisiblePixelValueCountsDebug();
+            for (std::size_t i = 0; i < pixelValueCounts.size(); ++i) {
+                if (i) std::cout << ",";
+                std::cout << pixelValueCounts[i];
+            }
+            std::cout << "] table1-first16=[";
             for (std::size_t i = 0; i < 16; ++i) {
                 if (i) std::cout << ",";
                 std::cout << static_cast<int>(bus.ppuNametableByteDebug(1, i));
