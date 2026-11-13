@@ -16,6 +16,7 @@ public:
     std::uint8_t debugStatus() const { return status; }
     std::uint64_t debugVblankEvents() const { return vblankEvents; }
     std::uint64_t debugVblankStatusReads() const { return vblankStatusReads; }
+    std::uint8_t debugLastStatusRead() const { return lastStatusRead; }
     int debugScanline() const { return scanline; }
     int debugPpuCycle() const { return ppuCycle; }
     std::uint8_t debugPalette() const { return paletteRam[0]; }
@@ -58,6 +59,7 @@ private:
     bool nmiPending = false;
     std::uint64_t vblankEvents = 0;
     std::uint64_t vblankStatusReads = 0;
+    std::uint8_t lastStatusRead = 0;
 
     std::uint16_t mapNametableAddress(std::uint16_t address) const;
     static std::uint8_t mapPaletteAddress(std::uint16_t address);
