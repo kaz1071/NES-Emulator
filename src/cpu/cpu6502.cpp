@@ -176,8 +176,8 @@ bool CPU6502::step() {
 
         // Subroutine and jump instructions
         case 0x20: {
-            const target = fetchWord();
-            const returnAddress = static_cast<std::uint16_t>(pc - 1);
+            const auto target = fetchWord();
+            const auto returnAddress = static_cast<std::uint16_t>(pc - 1);
             push(static_cast<std::uint8_t>((returnAddress >> 8) & 0xFF));
             push(static_cast<std::uint8_t>(returnAddress & 0xFF));
             pc = target;
