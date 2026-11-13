@@ -1,33 +1,32 @@
 #pragma once
 
 #include "../cartridge/cartridge.hpp"
-
 #include <array>
 #include <cstdint>
 #include <string>
 
 class CPU6502 {
 public:
-    // The NES CPU has 2 KiB of internal RAM, mirrored through $1FFF.
     void connectCartridge(const Cartridge* cartridge);
     void reset();
-
-    // Executes one instruction. Returns false if the CPU is halted or an
-    // unsupported opcode is encountered.
     bool step();
 
-    std::uint8_t a = 0;       // Accumulator
-    std::uint8_t x = 0;       // X index register
-    std::uint8_t y = 0;       // Y index register
-    std::uint8_t sp = 0xFD;   // Stack pointer
-    std::uint16_t pc = 0;     // Program counter
+    std::uint8_t a = 0, x = 0, y = 0;
+    std::uint8_t sp = 0xFD;
+    std::uint16_t pc = 0;
     std::uint8_t status = 0x24;
 
     bool halted() const;
     const std::string& error() const;
 
 private:
+    static constexpr std::uint8_t FLAG_CARRY = 0x01;
     static constexpr std::uint8_t FLAG_ZERO = 0x02;
+    static constexpr std::uint8_t FLAG_INTERRUPT = 0x04;
+    static constexpr std::uint8_t FLAG_DECIMAL = 0x08;
+    static constexpr std::uint8_t FLAG_BREAK = 0x10;
+    static constexpr std::uint8_t FLAG_UNUSED = 0x20;
+    static constexpr std::uint8_t FLAG_OVERFLOW = 0x40;
     static constexpr std::uint8_t FLAG_NEGATIVE = 0x80;
 
     std::array<std::uint8_t, 2048> ram{};
@@ -37,5 +36,11 @@ private:
 
     std::uint8_t read(std::uint16_t address) const;
     void write(std::uint16_t address, std::uint8_t value);
+    void setFlag(std::uint8_t flag, bool value);
+    bool getFlag(std::uint8_t flag) const;
     void setZeroNegative(std::uint8_t value);
+    void push(std::uint8_t value);
+    std::uint8_t pop();
+    void adc(std::uint8_t value);
+    void compare(std::uint8_t reg, std::uint8_t value);
 };
