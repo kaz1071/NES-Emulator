@@ -96,6 +96,12 @@ bool CPU6502::step() {
         const std::uint16_t base = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
         return static_cast<std::uint16_t>(base + y);
     };
+    const auto indx = [this, &fetch]() {
+        const std::uint8_t pointer = static_cast<std::uint8_t>(fetch() + x);
+        const std::uint8_t low = read(pointer);
+        const std::uint8_t high = read(static_cast<std::uint8_t>(pointer + 1));
+        return static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
+    };
     const auto branch = [this, &fetch](bool condition) {
         const auto offset = static_cast<std::int8_t>(fetch());
         if (condition) pc = static_cast<std::uint16_t>(pc + offset);
@@ -107,6 +113,148 @@ bool CPU6502::step() {
     traceOpcodes[traceIndex] = opcode;
     traceIndex = (traceIndex + 1) % traceAddresses.size();
     switch (opcode) {
+
+        // Read/modify/write and logic instructions commonly used by NES games.
+        case 0x01: a |= read(indx()); setZeroNegative(a); break;
+        case 0x05: a |= read(zp()); setZeroNegative(a); break;
+        case 0x0D: a |= read(fetchWord()); setZeroNegative(a); break;
+        case 0x11: a |= read(indy()); setZeroNegative(a); break;
+        case 0x15: a |= read(zpx()); setZeroNegative(a); break;
+        case 0x19: a |= read(absy()); setZeroNegative(a); break;
+        case 0x1D: a |= read(absx()); setZeroNegative(a); break;
+
+        case 0x21: a &= read(indx()); setZeroNegative(a); break;
+        case 0x25: a &= read(zp()); setZeroNegative(a); break;
+        case 0x2D: a &= read(fetchWord()); setZeroNegative(a); break;
+        case 0x31: a &= read(indy()); setZeroNegative(a); break;
+        case 0x35: a &= read(zpx()); setZeroNegative(a); break;
+        case 0x39: a &= read(absy()); setZeroNegative(a); break;
+        case 0x3D: a &= read(absx()); setZeroNegative(a); break;
+
+        case 0x41: a ^= read(indx()); setZeroNegative(a); break;
+        case 0x45: a ^= read(zp()); setZeroNegative(a); break;
+        case 0x4D: a ^= read(fetchWord()); setZeroNegative(a); break;
+        case 0x51: a ^= read(indy()); setZeroNegative(a); break;
+        case 0x55: a ^= read(zpx()); setZeroNegative(a); break;
+        case 0x59: a ^= read(absy()); setZeroNegative(a); break;
+        case 0x5D: a ^= read(absx()); setZeroNegative(a); break;
+
+        case 0x61: adc(read(indx())); break;
+        case 0x6D: adc(read(fetchWord())); break;
+        case 0x71: adc(read(indy())); break;
+        case 0x75: adc(read(zpx())); break;
+        case 0x79: adc(read(absy())); break;
+        case 0x7D: adc(read(absx())); break;
+
+        case 0x81: write(indx(), a); break;
+        case 0x91: write(indy(), a); break;
+
+        case 0xA1: a = read(indx()); setZeroNegative(a); break;
+
+        case 0xC1: compare(a, read(indx())); break;
+        case 0xC5: compare(a, read(zp())); break;
+        case 0xCD: compare(a, read(fetchWord())); break;
+        case 0xD1: compare(a, read(indy())); break;
+        case 0xD5: compare(a, read(zpx())); break;
+        case 0xD9: compare(a, read(absy())); break;
+        case 0xDD: compare(a, read(absx())); break;
+
+        case 0xE1: adc(static_cast<std::uint8_t>(~read(indx()))); break;
+        case 0xE5: adc(static_cast<std::uint8_t>(~read(zp()))); break;
+        case 0xED: adc(static_cast<std::uint8_t>(~read(fetchWord()))); break;
+        case 0xF1: adc(static_cast<std::uint8_t>(~read(indy()))); break;
+        case 0xF5: adc(static_cast<std::uint8_t>(~read(zpx()))); break;
+        case 0xF9: adc(static_cast<std::uint8_t>(~read(absy()))); break;
+        case 0xFD: adc(static_cast<std::uint8_t>(~read(absx()))); break;
+
+        case 0x24: {
+            const auto value = read(zp());
+            setFlag(FLAG_ZERO, (a & value) == 0);
+            setFlag(FLAG_OVERFLOW, (value & 0x40) != 0);
+            setFlag(FLAG_NEGATIVE, (value & 0x80) != 0);
+            break;
+        }
+        case 0x2C: {
+            const auto value = read(fetchWord());
+            setFlag(FLAG_ZERO, (a & value) == 0);
+            setFlag(FLAG_OVERFLOW, (value & 0x40) != 0);
+            setFlag(FLAG_NEGATIVE, (value & 0x80) != 0);
+            break;
+        }
+
+        case 0x26: case 0x2E: case 0x36: case 0x3E: {
+            const std::uint16_t address = opcode == 0x26 ? zp() :
+                opcode == 0x2E ? fetchWord() :
+                opcode == 0x36 ? zpx() : absx();
+            const auto oldValue = read(address);
+            const auto result = static_cast<std::uint8_t>((oldValue << 1) | (getFlag(FLAG_CARRY) ? 1 : 0));
+            setFlag(FLAG_CARRY, (oldValue & 0x80) != 0);
+            write(address, result); setZeroNegative(result); break;
+        }
+        case 0x46: case 0x4E: case 0x56: case 0x5E: {
+            const std::uint16_t address = opcode == 0x46 ? zp() :
+                opcode == 0x4E ? fetchWord() :
+                opcode == 0x56 ? zpx() : absx();
+            const auto oldValue = read(address);
+            const auto result = static_cast<std::uint8_t>((oldValue >> 1) | (getFlag(FLAG_CARRY) ? 0x80 : 0));
+            setFlag(FLAG_CARRY, (oldValue & 0x01) != 0);
+            write(address, result); setZeroNegative(result); break;
+        }
+        case 0x66: case 0x6E: case 0x76: case 0x7E: {
+            const std::uint16_t address = opcode == 0x66 ? zp() :
+                opcode == 0x6E ? fetchWord() :
+                opcode == 0x76 ? zpx() : absx();
+            const auto oldValue = read(address);
+            const auto result = static_cast<std::uint8_t>((oldValue >> 1) | (getFlag(FLAG_CARRY) ? 0x80 : 0));
+            setFlag(FLAG_CARRY, (oldValue & 0x01) != 0);
+            write(address, result); setZeroNegative(result); break;
+        }
+        case 0x0E: case 0x16: case 0x1E: {
+            const std::uint16_t address = opcode == 0x0E ? fetchWord() :
+                opcode == 0x16 ? zpx() : absx();
+            const auto oldValue = read(address);
+            const auto result = static_cast<std::uint8_t>(oldValue << 1);
+            setFlag(FLAG_CARRY, (oldValue & 0x80) != 0);
+            write(address, result); setZeroNegative(result); break;
+        }
+        case 0x4A: break; // Accumulator LSR is implemented in the original switch below.
+        case 0x2A: {
+            const bool carryIn = getFlag(FLAG_CARRY);
+            setFlag(FLAG_CARRY, (a & 0x80) != 0);
+            a = static_cast<std::uint8_t>((a << 1) | (carryIn ? 1 : 0));
+            setZeroNegative(a); break;
+        }
+        case 0x6A: {
+            const bool carryIn = getFlag(FLAG_CARRY);
+            setFlag(FLAG_CARRY, (a & 0x01) != 0);
+            a = static_cast<std::uint8_t>((a >> 1) | (carryIn ? 0x80 : 0));
+            setZeroNegative(a); break;
+        }
+
+        case 0xC6: case 0xCE: case 0xD6: case 0xDE: {
+            const std::uint16_t address = opcode == 0xC6 ? zp() :
+                opcode == 0xCE ? fetchWord() :
+                opcode == 0xD6 ? zpx() : absx();
+            const auto result = static_cast<std::uint8_t>(read(address) - 1);
+            write(address, result); setZeroNegative(result); break;
+        }
+        case 0xEE: case 0xF6: case 0xFE: {
+            const std::uint16_t address = opcode == 0xEE ? fetchWord() :
+                opcode == 0xF6 ? zpx() : absx();
+            const auto result = static_cast<std::uint8_t>(read(address) + 1);
+            write(address, result); setZeroNegative(result); break;
+        }
+
+        case 0x84: write(zp(), y); break;
+        case 0x94: write(zpx(), y); break;
+        case 0x8C: write(fetchWord(), y); break;
+        case 0x86: write(zp(), x); break;
+        case 0x96: write(zpy(), x); break;
+        case 0x8E: write(fetchWord(), x); break;
+        case 0xE4: compare(x, read(zp())); break;
+        case 0xEC: compare(x, read(fetchWord())); break;
+        case 0xC4: compare(y, read(zp())); break;
+        case 0xCC: compare(y, read(fetchWord())); break;
         // Loads (all LDA/LDX/LDY forms update Zero and Negative flags)
         case 0xA9: a = fetch(); setZeroNegative(a); break;
         case 0xA5: a = read(zp()); setZeroNegative(a); break;
