@@ -34,6 +34,7 @@ public:
     std::size_t debugVisiblePatternPixels() const;
     std::array<std::size_t, 4> debugVisiblePixelValueCounts() const;
     std::array<std::size_t, 64> debugVisiblePaletteIndexCounts() const;
+    std::array<std::size_t, 32> debugVisiblePaletteSlotCounts() const;
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
