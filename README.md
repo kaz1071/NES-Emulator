@@ -8,7 +8,8 @@ The project is in early development. It currently includes an SDL2 application, 
 
 - [x] C++20 and CMake project setup
 - [x] SDL2 application window
-- [x] In-window **LOAD ROM** button using the Linux desktop file picker
+- [x] Centered monochrome **LOAD ROM** button
+- [x] Linux desktop file picker
 - [x] Standard iNES header parsing
 - [x] NROM (mapper 0) PRG-ROM loading
 - [x] CHR-ROM loading and CHR-RAM allocation
@@ -17,6 +18,7 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] Initial NES memory bus
 - [x] PPU registers, CHR access, nametable/palette memory, and mirroring
 - [x] 256×240 background renderer, basic scrolling, and sprites
+- [x] Black screen instead of diagnostic color grid when the PPU background is disabled
 - [x] Experimental CPU instruction execution loop
 - [ ] Full 6502 instruction and cycle support
 - [ ] PPU frame timing, vblank, and NMI
@@ -47,7 +49,7 @@ Start the emulator:
 ./build/nes-emulator
 ```
 
-Click **LOAD ROM** in the top-left corner and choose a `.nes` file. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
+Click the centered **LOAD ROM** button and choose a `.nes` file. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
 
 ```bash
 ./build/nes-emulator /path/to/game.nes
@@ -61,9 +63,8 @@ The emulator core is being implemented in this repository rather than wrapping a
 
 Press **Escape** to close the window.
 
-## Version 0.11.0
+## Version 0.12.0
 
-- Added an in-window LOAD ROM button.
-- Opens the Linux desktop file chooser through Zenity, with KDialog as a fallback.
-- Loads a selected compatible ROM into the running emulator and resets the bus and CPU.
-- Retains command-line ROM loading.
+- Centered the LOAD ROM button and changed its UI to grayscale.
+- Removed the diagnostic color grid; the PPU output is black until background rendering is enabled.
+- Preserved the NES color palette for actual game graphics.
