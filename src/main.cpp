@@ -323,6 +323,9 @@ int main(int argc, char** argv) {
         const Uint32 diagnosticNow = SDL_GetTicks();
         if (hasCartridge && diagnosticNow - lastCpuDiagnostic >= 2000) {
             std::cout << "CPU debug: PC=$" << std::hex << cpu.pc
+                      << " next=[" << static_cast<int>(bus.read(cpu.pc)) << " "
+                      << static_cast<int>(bus.read(static_cast<std::uint16_t>(cpu.pc + 1))) << " "
+                      << static_cast<int>(bus.read(static_cast<std::uint16_t>(cpu.pc + 2))) << "]"
                       << " A=$" << static_cast<int>(cpu.a)
                       << " X=$" << static_cast<int>(cpu.x)
                       << " Y=$" << static_cast<int>(cpu.y)
