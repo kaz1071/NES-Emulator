@@ -9,6 +9,7 @@ public:
     void connectCartridge(Cartridge* cartridge);
     void reset();
     void clock();
+    bool consumeNmi();
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
@@ -37,6 +38,7 @@ private:
     bool writeSecond = false;
     int ppuCycle = 0;
     int scanline = 261;
+    bool nmiPending = false;
 
     std::uint16_t mapNametableAddress(std::uint16_t address) const;
     static std::uint8_t mapPaletteAddress(std::uint16_t address);
