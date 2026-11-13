@@ -94,6 +94,26 @@ void PPU2C02::ppuWrite(std::uint16_t address, std::uint8_t value) {
 }
 
 
+
+std::size_t PPU2C02::debugNametableNonZero() const {
+    return static_cast<std::size_t>(std::count_if(nametableRam.begin(), nametableRam.end(),
+        [](std::uint8_t value) { return value != 0; }));
+}
+
+std::size_t PPU2C02::debugChrNonZero() const {
+    if (cartridge == nullptr) return 0;
+    std::size_t count = 0;
+    for (std::uint16_t address = 0; address < 0x2000; ++address) {
+        if (cartridge->readChr(address) != 0) ++count;
+    }
+    return count;
+}
+
+std::size_t PPU2C02::debugPaletteNonZero() const {
+    return static_cast<std::size_t>(std::count_if(paletteRam.begin(), paletteRam.end(),
+        [](std::uint8_t value) { return value != 0; }));
+}
+
 void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     static constexpr std::array<std::uint32_t, 64> colors = {
         0xFF666666,0xFF002A88,0xFF1412A7,0xFF3B00A4,0xFF5C007E,0xFF6E0040,0xFF6C0600,0xFF561D00,
