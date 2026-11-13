@@ -213,6 +213,40 @@ std::array<std::size_t, 4> PPU2C02::debugVisiblePixelValueCounts() const {
     return counts;
 }
 
+std::array<std::size_t, 64> PPU2C02::debugVisiblePaletteIndexCounts() const {
+    std::array<std::size_t, 64> counts{};
+    const int baseTableX = control & 1, baseTableY = (control >> 1) & 1;
+    const int patternBase = (control & 0x10) ? 0x1000 : 0;
+    for (int y = 0; y < 240; ++y) for (int x = 0; x < 256; ++x) {
+        const int worldX = (x + scrollX) % 512, worldY = (y + scrollY) % 480;
+        const int tableX = (baseTableX + worldX / 256) & 1;
+        const int tableY = (baseTableY + worldY / 240) & 1;
+        const int localX = worldX % 256, localY = worldY % 240;
+        const std::uint16_t tableBase = static_cast<std::uint16_t>(
+            0x2000 + (tableY * 2 + tableX) * 0x400);
+        const int tileX = localX / 8, tileY = localY / 8;
+        const auto tile = ppuRead(static_cast<std::uint16_t>(
+            tableBase + tileY * 32 + tileX));
+        const std::uint16_t pat = static_cast<std::uint16_t>(
+            patternBase + tile * 16 + (localY & 7));
+        const auto lo = ppuRead(pat);
+        const auto hi = ppuRead(static_cast<std::uint16_t>(pat + 8));
+        const int bit = 7 - (localX & 7);
+        const std::uint8_t pixel = static_cast<std::uint8_t>(
+            ((lo >> bit) & 1) | (((hi >> bit) & 1) << 1));
+        if (pixel == 0) continue;
+        const std::uint16_t attrAddr = static_cast<std::uint16_t>(
+            tableBase + 0x3C0 + (tileY / 4) * 8 + tileX / 4);
+        const auto attr = ppuRead(attrAddr);
+        const int shift = ((tileY & 2) ? 4 : 0) + ((tileX & 2) ? 2 : 0);
+        const auto palette = static_cast<std::uint8_t>((attr >> shift) & 3);
+        const auto colorIndex = static_cast<std::uint8_t>(
+            ppuRead(static_cast<std::uint16_t>(0x3F00 + palette * 4 + pixel)) & 0x3F);
+        ++counts[colorIndex];
+    }
+    return counts;
+}
+
 void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     static constexpr std::array<std::uint32_t, 64> colors = {
         0xFF666666,0xFF002A88,0xFF1412A7,0xFF3B00A4,0xFF5C007E,0xFF6E0040,0xFF6C0600,0xFF561D00,
