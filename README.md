@@ -23,7 +23,8 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] Experimental CPU instruction execution loop
 - [ ] Full 6502 instruction and cycle support
 - [ ] PPU frame timing, vblank, and NMI
-- [ ] Controller input and APU audio
+- [x] Basic NES controller 1 input (keyboard-mapped)
+- [ ] APU audio
 - [ ] Additional cartridge mappers
 
 ## Build on Linux
@@ -58,17 +59,18 @@ Click the large centered **LOAD ROM** button and choose a `.nes` file. Click **Q
 
 ## Compatibility notes
 
-The cartridge loader supports mapper 0 (NROM) with 16 or 32 KiB of PRG-ROM and mapper 66 (GxROM) with up to 128 KiB of PRG-ROM and 32 KiB of CHR-ROM. Mapper 66 bank switching is implemented for its 32 KiB PRG and 8 KiB CHR banks. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily playable yet: CPU instructions are incomplete, CPU pacing is not cycle-accurate, and PPU timing/vblank/NMI, controllers, DMA, and audio are not implemented. Commercial games are not expected to run correctly at this stage.
+The cartridge loader supports mapper 0 (NROM) with 16 or 32 KiB of PRG-ROM and mapper 66 (GxROM) with up to 128 KiB of PRG-ROM and 32 KiB of CHR-ROM. Mapper 66 bank switching is implemented for its 32 KiB PRG and 8 KiB CHR banks. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily playable yet: CPU instructions are incomplete, CPU pacing is not cycle-accurate, and PPU timing/vblank/NMI, DMA, and audio are not implemented. Controller 1 has basic keyboard input. Commercial games are not expected to run correctly at this stage.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
 Press **Escape** to close the window.
 
-## Version 0.15.0
+## Version 0.16.0
 
 - Added large, vertically stacked LOAD ROM and QUIT buttons centered in the window.
 - Added on-screen success and error messages when selecting a ROM.
 - Added initial Mapper 66 (GxROM) support with PRG/CHR bank switching.
+- Added basic controller 1 support: arrows, Z, X, Right Shift, and Enter.
 - Kept the menu buttons and text monochrome.
 - Removed the diagnostic color grid; the PPU output is black until background rendering is enabled.
 - Preserved the NES color palette for actual game graphics.
