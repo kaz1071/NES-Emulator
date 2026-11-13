@@ -100,6 +100,15 @@ std::size_t PPU2C02::debugNametableNonZero() const {
         [](std::uint8_t value) { return value != 0; }));
 }
 
+std::size_t PPU2C02::debugNametableTableNonZero(std::size_t table) const {
+    if (table >= 4) return 0;
+    const std::size_t begin = table * 0x400;
+    return static_cast<std::size_t>(std::count_if(
+        nametableRam.begin() + static_cast<std::ptrdiff_t>(begin),
+        nametableRam.begin() + static_cast<std::ptrdiff_t>(begin + 0x400),
+        [](std::uint8_t value) { return value != 0; }));
+}
+
 std::size_t PPU2C02::debugChrNonZero() const {
     if (cartridge == nullptr) return 0;
     std::size_t count = 0;
