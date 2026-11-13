@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::cout << "NES Emulator started. Press Escape to quit.\n";
+    std::cout << "NES Emulator started. Use the QUIT button to exit; F11 toggles fullscreen.\n";
     if (hasCartridge)
         std::cout << "Experimental CPU execution active (partial 6502 instruction set; not cycle-accurate).\n";
 
@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
                 if (SDL_SetWindowFullscreen(window, mode) == 0) {
                     fullscreen = !fullscreen;
                 } else {
-                    std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\\n';
+                    std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\n';
                 }
             }
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
@@ -251,7 +251,7 @@ int main(int argc, char** argv) {
                     if (SDL_SetWindowFullscreen(window, mode) == 0) {
                         fullscreen = !fullscreen;
                     } else {
-                        std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\\n';
+                        std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\n';
                     }
                 } else if (contains(buttons[0], event.button.x, event.button.y)) {
                 const std::string selected = chooseRomFile();
@@ -282,6 +282,7 @@ int main(int argc, char** argv) {
                             "ROM loaded", "The ROM file was loaded. Game compatibility is still experimental, so the screen may remain black if the game uses unsupported CPU instructions or PPU features.", window);
                     }
                 }
+            }
             }
         }
 
