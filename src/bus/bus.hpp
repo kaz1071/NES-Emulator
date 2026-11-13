@@ -32,6 +32,8 @@ public:
     std::size_t ppuSelectedPatternNonZeroDebug() const { return ppu.debugSelectedPatternNonZero(); }
     std::size_t ppuTileNonZeroPixelsDebug(std::uint8_t tile, std::uint16_t patternBase) const { return ppu.debugTileNonZeroPixels(tile, patternBase); }
     std::size_t ppuPaletteNonZeroDebug() const { return ppu.debugPaletteNonZero(); }
+    std::size_t ppuVisibleUniqueTilesDebug() const { return ppu.debugVisibleUniqueTiles(); }
+    std::size_t ppuVisiblePatternPixelsDebug() const { return ppu.debugVisiblePatternPixels(); }
 private:
     std::array<std::uint8_t, 2048> ram{};
     std::array<std::uint8_t, 8192> prgRam{};
