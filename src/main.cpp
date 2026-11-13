@@ -320,6 +320,8 @@ int main(int argc, char** argv) {
             }
         }
 
+        bus.renderFrame(frame);
+
         const Uint32 diagnosticNow = SDL_GetTicks();
         if (hasCartridge && diagnosticNow - lastCpuDiagnostic >= 2000) {
             std::cout << "CPU debug: PC=$" << std::hex << cpu.pc
@@ -360,7 +362,6 @@ int main(int argc, char** argv) {
             lastCpuDiagnostic = diagnosticNow;
         }
 
-        bus.renderFrame(frame);
         SDL_UpdateTexture(screen, nullptr, frame.data(),
             NES_WIDTH * static_cast<int>(sizeof(std::uint32_t)));
         int outputWidth = 0, outputHeight = 0;
