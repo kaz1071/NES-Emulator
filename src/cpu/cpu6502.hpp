@@ -1,6 +1,8 @@
 #pragma once
 #include "../bus/bus.hpp"
 #include <cstdint>
+#include <array>
+#include <cstddef>
 #include <string>
 
 class CPU6502 {
@@ -16,6 +18,8 @@ public:
 
     bool halted() const;
     const std::string& error() const;
+    std::uint16_t debugTraceAddress(std::size_t index) const;
+    std::uint8_t debugTraceOpcode(std::size_t index) const;
 
 private:
     static constexpr std::uint8_t FLAG_CARRY = 0x01;
@@ -30,6 +34,9 @@ private:
     NESBus* bus = nullptr;
     bool isHalted = false;
     std::string lastError;
+    std::array<std::uint16_t, 16> traceAddresses{};
+    std::array<std::uint8_t, 16> traceOpcodes{};
+    std::size_t traceIndex = 0;
 
     std::uint8_t read(std::uint16_t address);
     void write(std::uint16_t address, std::uint8_t value);
