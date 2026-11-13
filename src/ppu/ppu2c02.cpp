@@ -24,6 +24,76 @@ void PPU2C02::reset() {
     lastStatusRead = 0;
 }
 
+void PPU2C02::updateSpriteZeroHit() {
+    // Sprite-zero hit is raised when opaque sprite 0 and background pixels
+    // overlap on a visible pixel. The hit flag is independent of priority.
+    if ((status & 0x40) || scanline < 0 || scanline >= 240 ||
+        ppuCycle < 1 || ppuCycle > 256 ||
+        (mask & 0x18) != 0x18) return;
+
+    const int x = ppuCycle - 1;
+    const int y = scanline;
+    if (x == 255 || (x < 8 && ((mask & 0x06) != 0x06))) return;
+
+    const int spriteX = oam[3];
+    const int spriteY = static_cast<int>(oam[0]) + 1;
+    const bool tall = (control & 0x20) != 0;
+    const int spriteHeight = tall ? 16 : 8;
+    if (x < spriteX || x >= spriteX + 8 ||
+        y < spriteY || y >= spriteY + spriteHeight) return;
+
+    // Resolve the background pixel using the current scroll and nametable.
+    const int worldX = (x + scrollX) % 512;
+    const int worldY = (y + scrollY) % 480;
+    const int tableX = ((control & 1) + worldX / 256) & 1;
+    const int tableY = (((control >> 1) & 1) + worldY / 240) & 1;
+    const int localX = worldX % 256;
+    const int localY = worldY % 240;
+    const std::uint16_t tableBase = static_cast<std::uint16_t>(
+        0x2000 + (tableY * 2 + tableX) * 0x400);
+    const int tileX = localX / 8;
+    const int tileY = localY / 8;
+    const std::uint8_t backgroundTile = ppuRead(static_cast<std::uint16_t>(
+        tableBase + tileY * 32 + tileX));
+    const std::uint16_t backgroundPattern = static_cast<std::uint16_t>(
+        ((control & 0x10) ? 0x1000 : 0) +
+        backgroundTile * 16 + (localY & 7));
+    const int backgroundBit = 7 - (localX & 7);
+    const std::uint8_t backgroundLow = ppuRead(backgroundPattern);
+    const std::uint8_t backgroundHigh = ppuRead(
+        static_cast<std::uint16_t>(backgroundPattern + 8));
+    const std::uint8_t backgroundPixel = static_cast<std::uint8_t>(
+        ((backgroundLow >> backgroundBit) & 1) |
+        (((backgroundHigh >> backgroundBit) & 1) << 1));
+    if (backgroundPixel == 0) return;
+
+    // Decode sprite 0, including horizontal/vertical flip and 8x16 mode.
+    const std::uint8_t tile = oam[1];
+    const std::uint8_t attributes = oam[2];
+    const int spriteColumn = x - spriteX;
+    const int spriteRow = y - spriteY;
+    const int sourceX = (attributes & 0x40) ? 7 - spriteColumn : spriteColumn;
+    const int sourceY = (attributes & 0x80)
+        ? spriteHeight - 1 - spriteRow : spriteRow;
+    std::uint16_t spritePattern;
+    if (tall) {
+        spritePattern = static_cast<std::uint16_t>(
+            ((tile & 1) * 0x1000) +
+            ((tile & 0xFE) + sourceY / 8) * 16 + (sourceY & 7));
+    } else {
+        spritePattern = static_cast<std::uint16_t>(
+            ((control & 0x08) ? 0x1000 : 0) + tile * 16 + sourceY);
+    }
+    const int spriteBit = 7 - sourceX;
+    const std::uint8_t spriteLow = ppuRead(spritePattern);
+    const std::uint8_t spriteHigh = ppuRead(
+        static_cast<std::uint16_t>(spritePattern + 8));
+    const std::uint8_t spritePixel = static_cast<std::uint8_t>(
+        ((spriteLow >> spriteBit) & 1) |
+        (((spriteHigh >> spriteBit) & 1) << 1));
+    if (spritePixel != 0) status |= 0x40;
+}
+
 void PPU2C02::clock() {
     // Approximate NTSC PPU timing: 341 dots across 262 scanlines.
     if (scanline == 241 && ppuCycle == 1) {
@@ -35,6 +105,7 @@ void PPU2C02::clock() {
         status &= 0x1F; // Clear VBlank, sprite-zero hit, and overflow
     }
 
+    updateSpriteZeroHit();
     ++ppuCycle;
     if (ppuCycle >= 341) {
         ppuCycle = 0;
