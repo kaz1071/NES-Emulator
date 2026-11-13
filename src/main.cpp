@@ -1,6 +1,7 @@
 #include <SDL.h>
 
 #include "cartridge/cartridge.hpp"
+#include "cpu/cpu6502.hpp"
 
 #include <filesystem>
 #include <iostream>
@@ -42,6 +43,13 @@ int main(int argc, char** argv) {
                   << "PRG-ROM: " << cartridge.prgRom.size() / 1024 << " KiB\n"
                   << "CHR: " << (cartridge.usesChrRam ? "8 KiB CHR-RAM" : "8 KiB CHR-ROM") << '\n'
                   << "Mirroring: " << mirroringName(cartridge.mirroring) << '\n';
+
+        CPU6502 cpu;
+        cpu.connectCartridge(&cartridge);
+        cpu.reset();
+        std::cout << "CPU reset complete.\n"
+                  << "6502 reset vector: $" << std::hex << cpu.pc
+                  << std::dec << '\n';
     } else {
         std::cout << "No ROM supplied. Start with: ./build/nes-emulator path/to/game.nes\n";
     }
