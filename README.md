@@ -85,3 +85,8 @@ Version 0.18.0 updates the window controls: Escape no longer exits the emulator,
 - Added an initial PPU vblank-to-CPU NMI interrupt path.
 - Added 6502 NMI entry and RTI return handling.
 - NMI delivery is still built on approximate PPU timing; the CPU instruction set and cycle timing remain incomplete.
+
+
+## Version 0.20.0
+
+- Added periodic CPU diagnostics while a ROM is running: program counter, registers, instruction count, and halted state are printed every two seconds.
