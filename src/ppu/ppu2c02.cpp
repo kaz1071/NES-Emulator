@@ -18,12 +18,14 @@ void PPU2C02::reset() {
     writeSecond = false;
     ppuCycle = 0;
     scanline = 261;
+    nmiPending = false;
 }
 
 void PPU2C02::clock() {
     // Approximate NTSC PPU timing: 341 dots across 262 scanlines.
     if (scanline == 241 && ppuCycle == 1) {
         status |= 0x80; // VBlank begins
+        if (control & 0x80) nmiPending = true;
     }
     if (scanline == 261 && ppuCycle == 1) {
         status &= 0x1F; // Clear VBlank, sprite-zero hit, and overflow
@@ -35,6 +37,12 @@ void PPU2C02::clock() {
         ++scanline;
         if (scanline >= 262) scanline = 0;
     }
+}
+
+bool PPU2C02::consumeNmi() {
+    const bool pending = nmiPending;
+    nmiPending = false;
+    return pending;
 }
 
 std::uint16_t PPU2C02::mapNametableAddress(std::uint16_t address) const {
@@ -192,6 +200,8 @@ void PPU2C02::cpuWrite(std::uint16_t registerAddress, std::uint8_t value) {
     openBus = value;
     switch (registerAddress & 0x07) {
         case 0:
+            if ((value & 0x80) && !(control & 0x80) && (status & 0x80))
+                nmiPending = true;
             control = value;
             temporaryAddress = static_cast<std::uint16_t>(
                 (temporaryAddress & 0xF3FF) | ((value & 0x03) << 10));
