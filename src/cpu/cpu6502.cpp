@@ -196,7 +196,7 @@ bool CPU6502::step() {
                 opcode == 0x4E ? fetchWord() :
                 opcode == 0x56 ? zpx() : absx();
             const auto oldValue = read(address);
-            const auto result = static_cast<std::uint8_t>((oldValue >> 1) | (getFlag(FLAG_CARRY) ? 0x80 : 0));
+            const auto result = static_cast<std::uint8_t>(oldValue >> 1);
             setFlag(FLAG_CARRY, (oldValue & 0x01) != 0);
             write(address, result); setZeroNegative(result); break;
         }
