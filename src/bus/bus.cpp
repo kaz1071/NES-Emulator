@@ -55,6 +55,15 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
         ram[address & 0x07FF] = value;
     } else if (address < 0x4000) {
         ppu.cpuWrite(address, value);
+    } else if (address == 0x4014) {
+        // OAM DMA: copy one CPU memory page into the PPU's 256-byte OAM.
+        // The transfer's CPU stall is not yet modeled, but the data transfer
+        // itself is required for sprites (including sprite-zero hit) to work.
+        const std::uint16_t source = static_cast<std::uint16_t>(value) << 8;
+        ppu.cpuWrite(0x2003, 0x00);
+        for (std::uint16_t offset = 0; offset < 0x100; ++offset) {
+            ppu.cpuWrite(0x2004, read(static_cast<std::uint16_t>(source + offset)));
+        }
     } else if (address == 0x4016) {
         const bool nextStrobe = (value & 1) != 0;
         if (nextStrobe || controllerStrobe) {
