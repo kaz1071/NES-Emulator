@@ -63,9 +63,10 @@ The emulator core is being implemented in this repository rather than wrapping a
 
 Press **Escape** to close the window.
 
-## Version 0.13.0
+## Version 0.14.0
 
 - Added large, vertically stacked LOAD ROM and QUIT buttons centered in the window.
+- Added on-screen success and error messages when selecting a ROM.
 - Kept the menu buttons and text monochrome.
 - Removed the diagnostic color grid; the PPU output is black until background rendering is enabled.
 - Preserved the NES color palette for actual game graphics.
