@@ -19,11 +19,7 @@ std::uint8_t NESBus::read(std::uint16_t address) {
     if (address < 0x6000) return 0; // Expansion area not implemented
     if (address < 0x8000) return prgRam[address - 0x6000];
 
-    if (cartridge != nullptr && !cartridge->prgRom.empty()) {
-        const std::size_t offset =
-            static_cast<std::size_t>(address - 0x8000) % cartridge->prgRom.size();
-        return cartridge->prgRom[offset];
-    }
+    if (cartridge != nullptr) return cartridge->readPrg(address);
     return 0;
 }
 
@@ -34,8 +30,10 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
         ppu.cpuWrite(address, value);
     } else if (address >= 0x6000 && address < 0x8000) {
         prgRam[address - 0x6000] = value;
+    } else if (address >= 0x8000 && cartridge != nullptr) {
+        cartridge->writePrg(address, value);
     }
-    // APU/controller devices and cartridge PRG-ROM writes are not implemented.
+    // APU/controller devices are not implemented.
 }
 
 void NESBus::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
