@@ -31,6 +31,8 @@ private:
     std::uint16_t vramAddress = 0;
     std::uint16_t temporaryAddress = 0;
     std::uint8_t fineX = 0;
+    std::uint8_t scrollX = 0;
+    std::uint8_t scrollY = 0;
     bool writeSecond = false;
 
     std::uint16_t mapNametableAddress(std::uint16_t address) const;
