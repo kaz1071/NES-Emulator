@@ -244,12 +244,6 @@ bool CPU6502::step() {
             write(address, result); setZeroNegative(result); break;
         }
 
-        case 0x84: write(zp(), y); break;
-        case 0x94: write(zpx(), y); break;
-        case 0x8C: write(fetchWord(), y); break;
-        case 0x86: write(zp(), x); break;
-        case 0x96: write(zpy(), x); break;
-        case 0x8E: write(fetchWord(), x); break;
         case 0xE4: compare(x, read(zp())); break;
         case 0xEC: compare(x, read(fetchWord())); break;
         case 0xC4: compare(y, read(zp())); break;
