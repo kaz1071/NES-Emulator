@@ -14,6 +14,10 @@ public:
     void write(std::uint16_t address, std::uint8_t value);
     void setControllerState(std::uint8_t port, std::uint8_t buttons);
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
+    std::uint8_t ppuControlDebug() const { return ppu.debugControl(); }
+    std::uint8_t ppuMaskDebug() const { return ppu.debugMask(); }
+    std::uint8_t ppuStatusDebug() const { return ppu.debugStatus(); }
+    std::uint8_t ppuPaletteDebug() const { return ppu.debugPalette(); }
 private:
     std::array<std::uint8_t, 2048> ram{};
     std::array<std::uint8_t, 8192> prgRam{};
