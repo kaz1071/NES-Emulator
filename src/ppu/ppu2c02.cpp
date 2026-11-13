@@ -16,6 +16,25 @@ void PPU2C02::reset() {
     fineX = 0;
     scrollX = scrollY = 0;
     writeSecond = false;
+    ppuCycle = 0;
+    scanline = 261;
+}
+
+void PPU2C02::clock() {
+    // Approximate NTSC PPU timing: 341 dots across 262 scanlines.
+    if (scanline == 241 && ppuCycle == 1) {
+        status |= 0x80; // VBlank begins
+    }
+    if (scanline == 261 && ppuCycle == 1) {
+        status &= 0x1F; // Clear VBlank, sprite-zero hit, and overflow
+    }
+
+    ++ppuCycle;
+    if (ppuCycle >= 341) {
+        ppuCycle = 0;
+        ++scanline;
+        if (scanline >= 262) scanline = 0;
+    }
 }
 
 std::uint16_t PPU2C02::mapNametableAddress(std::uint16_t address) const {
