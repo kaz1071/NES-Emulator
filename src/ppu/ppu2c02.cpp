@@ -87,6 +87,21 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     const std::uint16_t patternBase = (control & 0x10) ? 0x1000 : 0x0000;
     const std::uint32_t backdropColor = colors[ppuRead(0x3F00) & 0x3F];
 
+    // Until the CPU enables the PPU background, show a diagnostic palette
+    // pattern instead of an uninformative blank screen.
+    if ((mask & 0x08) == 0) {
+        for (int y = 0; y < 240; ++y) {
+            for (int x = 0; x < 256; ++x) {
+                const int paletteIndex = ((x / 32) * 8 + (y / 30)) & 0x3F;
+                const bool gridLine = (x % 8 == 0) || (y % 8 == 0);
+                const std::uint8_t colorIndex = static_cast<std::uint8_t>(
+                    gridLine ? 0x0F : paletteIndex);
+                pixels[static_cast<std::size_t>(y) * 256 + x] = colors[colorIndex];
+            }
+        }
+        return;
+    }
+
     for (int y = 0; y < 240; ++y) {
         for (int x = 0; x < 256; ++x) {
             std::uint32_t output = backdropColor;
