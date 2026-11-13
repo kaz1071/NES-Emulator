@@ -104,6 +104,9 @@ std::array<unsigned char, 7> glyphFor(char c) {
         case 'O': return {{14,17,17,17,17,17,14}};
         case 'A': return {{14,17,17,31,17,17,17}};
         case 'D': return {{30,17,17,17,17,17,30}};
+        case 'C': return {{14,17,16,16,16,17,14}};
+        case 'E': return {{31,16,16,30,16,16,31}};
+        case 'N': return {{17,25,25,21,19,19,17}};
         case 'R': return {{30,17,17,30,20,18,17}};
         case 'M': return {{17,27,21,21,17,17,17}};
         case 'Q': return {{14,17,17,17,21,18,13}};
