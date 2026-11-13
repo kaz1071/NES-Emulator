@@ -3,6 +3,7 @@
 #include "../ppu/ppu2c02.hpp"
 #include <array>
 #include <cstdint>
+#include <cstddef>
 
 class NESBus {
 public:
@@ -18,6 +19,9 @@ public:
     std::uint8_t ppuMaskDebug() const { return ppu.debugMask(); }
     std::uint8_t ppuStatusDebug() const { return ppu.debugStatus(); }
     std::uint8_t ppuPaletteDebug() const { return ppu.debugPalette(); }
+    std::size_t ppuNametableNonZeroDebug() const { return ppu.debugNametableNonZero(); }
+    std::size_t ppuChrNonZeroDebug() const { return ppu.debugChrNonZero(); }
+    std::size_t ppuPaletteNonZeroDebug() const { return ppu.debugPaletteNonZero(); }
 private:
     std::array<std::uint8_t, 2048> ram{};
     std::array<std::uint8_t, 8192> prgRam{};
