@@ -352,7 +352,7 @@ std::array<std::size_t, 32> PPU2C02::debugVisiblePaletteSlotCounts() const {
 void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     static constexpr std::array<std::uint32_t, 64> colors = {
         0xFF666666,0xFF002A88,0xFF1412A7,0xFF3B00A4,0xFF5C007E,0xFF6E0040,0xFF6C0600,0xFF561D00,
-        0xFF333500,0xFF0B4800,0xFF005200,0xFF004F08,0xFF00404D,0xFF000000,0xFF000000,0xFF000000,
+        0xFF333500,0xFF0B4800,0xFF005200,0xFF004F08,0xFF007C8D,0xFF000000,0xFF000000,0xFF000000,
         0xFFADADAD,0xFF155FD9,0xFF4240FF,0xFF7527FE,0xFFA01ACC,0xFFB71E7B,0xFFB53120,0xFF994E00,
         0xFF6B6D00,0xFF388700,0xFF0C9300,0xFF008F32,0xFF007C8D,0xFF000000,0xFF000000,0xFF000000,
         0xFFFFFEFF,0xFF64B0FF,0xFF9290FF,0xFFC676FF,0xFFF36AFF,0xFFFE6ECC,0xFFFE8170,0xFFEA9E22,
@@ -365,6 +365,7 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
         pixels.fill(0xFF000000);
         return;
     }
+
     std::array<std::uint8_t, 256 * 240> backgroundOpaque{};
     const int baseTableX = control & 1, baseTableY = (control >> 1) & 1;
     const int patternBase = (control & 0x10) ? 0x1000 : 0;
@@ -393,18 +394,35 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
         }
         pixels[static_cast<std::size_t>(y) * 256 + x] = output;
     }
+
     if ((mask & 0x10) == 0) return;
     const bool tall = (control & 0x20) != 0;
     const int height = tall ? 16 : 8;
-    int drawn = 0;
-    for (int s = 0; s < 64 && drawn < 8; ++s) {
-        const std::uint8_t rawY = oam[s * 4], tile = oam[s * 4 + 1], attr = oam[s * 4 + 2];
-        const int sx = oam[s * 4 + 3], sy = static_cast<int>(rawY) + 1;
-        if (sy >= 240 || sy + height <= 0) continue;
-        ++drawn;
+    std::array<std::uint8_t, 240> spritesOnLine{};
+    std::array<std::uint8_t, 64 * 240> spriteRowAllowed{};
+    // The NES permits eight sprites per scanline, not eight per frame.
+    // Determine the first eight sprites on each line in OAM order.
+    for (int s = 0; s < 64; ++s) {
+        const int sy = static_cast<int>(oam[s * 4]) + 1;
         for (int row = 0; row < height; ++row) {
             const int py = sy + row;
-            if (py < 0 || py >= 240) continue;
+            if (py < 0 || py >= 240 || spritesOnLine[py] >= 8) continue;
+            spriteRowAllowed[static_cast<std::size_t>(s) * 240 + py] = 1;
+            ++spritesOnLine[py];
+        }
+    }
+
+    // Draw from the last OAM entry to the first so lower OAM indices win
+    // when opaque sprite pixels overlap.
+    std::array<std::uint8_t, 256 * 240> spritePixel{};
+    std::array<std::uint8_t, 256 * 240> spriteBehindBackground{};
+    for (int s = 63; s >= 0; --s) {
+        const std::uint8_t rawY = oam[s * 4], tile = oam[s * 4 + 1], attr = oam[s * 4 + 2];
+        const int sx = oam[s * 4 + 3], sy = static_cast<int>(rawY) + 1;
+        for (int row = 0; row < height; ++row) {
+            const int py = sy + row;
+            if (py < 0 || py >= 240 ||
+                !spriteRowAllowed[static_cast<std::size_t>(s) * 240 + py]) continue;
             const int sourceY = (attr & 0x80) ? height - 1 - row : row;
             std::uint16_t pat;
             if (tall) pat = static_cast<std::uint16_t>((tile & 1) * 0x1000 + ((tile & 0xFE) + sourceY / 8) * 16 + (sourceY & 7));
@@ -417,10 +435,17 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
                 const std::uint8_t pixel = static_cast<std::uint8_t>(((lo >> bit) & 1) | (((hi >> bit) & 1) << 1));
                 if (!pixel) continue;
                 const std::size_t index = static_cast<std::size_t>(py) * 256 + px;
-                if ((attr & 0x20) && backgroundOpaque[index]) continue;
-                pixels[index] = colors[ppuRead(static_cast<std::uint16_t>(0x3F10 + (attr & 3) * 4 + pixel)) & 0x3F];
+                if (spritePixel[index] != 0) continue;
+                spritePixel[index] = static_cast<std::uint8_t>((attr & 3) * 4 + pixel);
+                spriteBehindBackground[index] = static_cast<std::uint8_t>((attr & 0x20) != 0);
             }
         }
+    }
+
+    for (std::size_t i = 0; i < spritePixel.size(); ++i) {
+        const std::uint8_t pixel = spritePixel[i];
+        if (pixel == 0 || (spriteBehindBackground[i] && backgroundOpaque[i])) continue;
+        pixels[i] = colors[ppuRead(static_cast<std::uint16_t>(0x3F10 + pixel)) & 0x3F];
     }
 }
 std::uint8_t PPU2C02::cpuRead(std::uint16_t registerAddress) {
