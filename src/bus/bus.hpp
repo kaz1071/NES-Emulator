@@ -10,10 +10,14 @@ public:
     void reset();
     std::uint8_t read(std::uint16_t address);
     void write(std::uint16_t address, std::uint8_t value);
+    void setControllerState(std::uint8_t port, std::uint8_t buttons);
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 private:
     std::array<std::uint8_t, 2048> ram{};
     std::array<std::uint8_t, 8192> prgRam{};
+    std::array<std::uint8_t, 2> controllerState{};
+    std::array<std::uint8_t, 2> controllerShift{};
+    bool controllerStrobe = false;
     Cartridge* cartridge = nullptr;
     PPU2C02 ppu;
 };
