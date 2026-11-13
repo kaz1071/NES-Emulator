@@ -1,6 +1,31 @@
 #include "cpu6502.hpp"
 #include <cstdint>
 
+namespace {
+constexpr std::array<std::uint8_t, 256> CPU_INSTRUCTION_CYCLES = [] {
+    std::array<std::uint8_t, 256> cycles{};
+    cycles.fill(2);
+    const auto set = [&cycles](std::uint8_t opcode, std::uint8_t count) { cycles[opcode] = count; };
+    set(0x00,7); set(0x01,6); set(0x05,3); set(0x06,5); set(0x08,3); set(0x09,2); set(0x0A,2); set(0x0D,4); set(0x0E,6);
+    set(0x10,2); set(0x11,5); set(0x15,4); set(0x16,6); set(0x18,2); set(0x19,4); set(0x1D,4); set(0x1E,7);
+    set(0x20,6); set(0x21,6); set(0x24,3); set(0x25,3); set(0x26,5); set(0x28,4); set(0x29,2); set(0x2A,2); set(0x2C,4); set(0x2D,4); set(0x2E,6);
+    set(0x30,2); set(0x31,5); set(0x35,4); set(0x36,6); set(0x38,2); set(0x39,4); set(0x3D,4); set(0x3E,7);
+    set(0x40,6); set(0x41,6); set(0x45,3); set(0x46,5); set(0x48,3); set(0x49,2); set(0x4A,2); set(0x4C,3); set(0x4D,4); set(0x4E,6);
+    set(0x50,2); set(0x51,5); set(0x55,4); set(0x56,6); set(0x58,2); set(0x59,4); set(0x5D,4); set(0x5E,7);
+    set(0x60,6); set(0x61,6); set(0x65,3); set(0x66,5); set(0x68,4); set(0x69,2); set(0x6A,2); set(0x6C,5); set(0x6D,4); set(0x6E,6);
+    set(0x70,2); set(0x71,5); set(0x75,4); set(0x76,6); set(0x78,2); set(0x79,4); set(0x7D,4); set(0x7E,7);
+    set(0x81,6); set(0x84,3); set(0x85,3); set(0x86,3); set(0x88,2); set(0x8A,2); set(0x8C,4); set(0x8D,4); set(0x8E,4);
+    set(0x90,2); set(0x91,6); set(0x94,4); set(0x95,4); set(0x96,4); set(0x98,2); set(0x99,5); set(0x9A,2); set(0x9D,5);
+    set(0xA0,2); set(0xA1,6); set(0xA2,2); set(0xA4,3); set(0xA5,3); set(0xA6,3); set(0xA8,2); set(0xA9,2); set(0xAA,2); set(0xAC,4); set(0xAD,4); set(0xAE,4);
+    set(0xB0,2); set(0xB1,5); set(0xB4,4); set(0xB5,4); set(0xB6,4); set(0xB8,2); set(0xB9,4); set(0xBA,2); set(0xBC,4); set(0xBD,4); set(0xBE,4);
+    set(0xC0,2); set(0xC1,6); set(0xC4,3); set(0xC5,3); set(0xC6,5); set(0xC8,2); set(0xC9,2); set(0xCA,2); set(0xCC,4); set(0xCD,4); set(0xCE,6);
+    set(0xD0,2); set(0xD1,5); set(0xD5,4); set(0xD6,6); set(0xD8,2); set(0xD9,4); set(0xDD,4); set(0xDE,7);
+    set(0xE0,2); set(0xE1,6); set(0xE4,3); set(0xE5,3); set(0xE6,5); set(0xE8,2); set(0xE9,2); set(0xEA,2); set(0xEC,4); set(0xED,4); set(0xEE,6);
+    set(0xF0,2); set(0xF1,5); set(0xF5,4); set(0xF6,6); set(0xF8,2); set(0xF9,4); set(0xFD,4); set(0xFE,7);
+    return cycles;
+}();
+}
+
 void CPU6502::connectBus(NESBus* connectedBus) {
     bus = connectedBus;
 }
@@ -55,6 +80,7 @@ void CPU6502::reset() {
     sp = 0xFD;
     status = FLAG_UNUSED | FLAG_INTERRUPT;
     isHalted = false;
+    lastStepCycleCount = 0;
     lastError.clear();
     traceAddresses.fill(0);
     traceOpcodes.fill(0);
@@ -75,6 +101,7 @@ bool CPU6502::step() {
         const std::uint8_t low = read(0xFFFA);
         const std::uint8_t high = read(0xFFFB);
         pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
+        lastStepCycleCount = 7;
         return true;
     }
 
@@ -102,9 +129,15 @@ bool CPU6502::step() {
         const std::uint8_t high = read(static_cast<std::uint8_t>(pointer + 1));
         return static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
     };
-    const auto branch = [this, &fetch](bool condition) {
+    int extraCycles = 0;
+    const auto branch = [this, &fetch, &extraCycles](bool condition) {
         const auto offset = static_cast<std::int8_t>(fetch());
-        if (condition) pc = static_cast<std::uint16_t>(pc + offset);
+        if (condition) {
+            const std::uint16_t oldPc = pc;
+            pc = static_cast<std::uint16_t>(pc + offset);
+            ++extraCycles;
+            if ((oldPc & 0xFF00) != (pc & 0xFF00)) ++extraCycles;
+        }
     };
 
     const std::uint16_t instructionAddress = pc;
@@ -398,9 +431,11 @@ bool CPU6502::step() {
         }
     }
     status |= FLAG_UNUSED;
+    lastStepCycleCount = static_cast<int>(CPU_INSTRUCTION_CYCLES[opcode]) + extraCycles;
     return true;
 }
 
+int CPU6502::lastStepCycles() const { return lastStepCycleCount; }
 bool CPU6502::halted() const { return isHalted; }
 const std::string& CPU6502::error() const { return lastError; }
 std::uint16_t CPU6502::debugTraceAddress(std::size_t index) const {
