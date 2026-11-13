@@ -14,6 +14,7 @@ void PPU2C02::reset() {
     control = mask = status = oamAddress = openBus = readBuffer = 0;
     vramAddress = temporaryAddress = 0;
     fineX = 0;
+    scrollX = scrollY = 0;
     writeSecond = false;
 }
 
@@ -82,61 +83,73 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
         0xFFFFFEFF,0xFFC0DFFF,0xFFD3D2FF,0xFFE8C8FF,0xFFFBC2FF,0xFFFEC4EA,0xFFFECCC5,0xFFF7D8A5,
         0xFFE4E594,0xFFCFEF96,0xFFBDF4AB,0xFFB3F3CC,0xFFB5EBF2,0xFFB8B8B8,0xFF000000,0xFF000000
     };
-    const std::uint16_t nametableBase =
-        static_cast<std::uint16_t>(0x2000 + (control & 0x03) * 0x0400);
-    const std::uint16_t patternBase = (control & 0x10) ? 0x1000 : 0x0000;
     const std::uint32_t backdropColor = colors[ppuRead(0x3F00) & 0x3F];
-
-    // Until the CPU enables the PPU background, show a diagnostic palette
-    // pattern instead of an uninformative blank screen.
     if ((mask & 0x08) == 0) {
-        for (int y = 0; y < 240; ++y) {
-            for (int x = 0; x < 256; ++x) {
-                const int paletteIndex = ((x / 32) * 8 + (y / 30)) & 0x3F;
-                const bool gridLine = (x % 8 == 0) || (y % 8 == 0);
-                const std::uint8_t colorIndex = static_cast<std::uint8_t>(
-                    gridLine ? 0x0F : paletteIndex);
-                pixels[static_cast<std::size_t>(y) * 256 + x] = colors[colorIndex];
-            }
+        for (int y = 0; y < 240; ++y) for (int x = 0; x < 256; ++x) {
+            const int paletteIndex = ((x / 32) * 8 + (y / 30)) & 0x3F;
+            pixels[static_cast<std::size_t>(y) * 256 + x] =
+                colors[((x % 8 == 0) || (y % 8 == 0)) ? 0x0F : paletteIndex];
         }
         return;
     }
-
-    for (int y = 0; y < 240; ++y) {
-        for (int x = 0; x < 256; ++x) {
-            std::uint32_t output = backdropColor;
-            if ((mask & 0x08) != 0 && (x >= 8 || (mask & 0x02) != 0)) {
-                const int tileX = x / 8;
-                const int tileY = y / 8;
-                const int pixelX = x & 7;
-                const int pixelY = y & 7;
-                const std::uint8_t tile = ppuRead(static_cast<std::uint16_t>(
-                    nametableBase + tileY * 32 + tileX));
-                const std::uint16_t patternAddress = static_cast<std::uint16_t>(
-                    patternBase + tile * 16 + pixelY);
-                const std::uint8_t low = ppuRead(patternAddress);
-                const std::uint8_t high = ppuRead(
-                    static_cast<std::uint16_t>(patternAddress + 8));
-                const int bit = 7 - pixelX;
-                const std::uint8_t pixel = static_cast<std::uint8_t>(
-                    ((low >> bit) & 1) | (((high >> bit) & 1) << 1));
-                if (pixel != 0) {
-                    const std::uint16_t attributeAddress = static_cast<std::uint16_t>(
-                        nametableBase + 0x03C0 + (tileY / 4) * 8 + (tileX / 4));
-                    const std::uint8_t attribute = ppuRead(attributeAddress);
-                    const int shift = ((tileY & 2) ? 4 : 0) + ((tileX & 2) ? 2 : 0);
-                    const std::uint8_t palette = static_cast<std::uint8_t>(
-                        (attribute >> shift) & 0x03);
-                    const std::uint16_t paletteAddress = static_cast<std::uint16_t>(
-                        0x3F00 + palette * 4 + pixel);
-                    output = colors[ppuRead(paletteAddress) & 0x3F];
-                }
+    std::array<std::uint8_t, 256 * 240> backgroundOpaque{};
+    const int baseTableX = control & 1, baseTableY = (control >> 1) & 1;
+    const int patternBase = (control & 0x10) ? 0x1000 : 0;
+    for (int y = 0; y < 240; ++y) for (int x = 0; x < 256; ++x) {
+        std::uint32_t output = backdropColor;
+        if (x >= 8 || (mask & 0x02)) {
+            const int worldX = (x + scrollX) % 512, worldY = (y + scrollY) % 480;
+            const int tableX = (baseTableX + worldX / 256) & 1;
+            const int tableY = (baseTableY + worldY / 240) & 1;
+            const int localX = worldX % 256, localY = worldY % 240;
+            const std::uint16_t tableBase = static_cast<std::uint16_t>(0x2000 + (tableY * 2 + tableX) * 0x400);
+            const int tileX = localX / 8, tileY = localY / 8;
+            const std::uint8_t tile = ppuRead(static_cast<std::uint16_t>(tableBase + tileY * 32 + tileX));
+            const std::uint16_t pat = static_cast<std::uint16_t>(patternBase + tile * 16 + (localY & 7));
+            const std::uint8_t lo = ppuRead(pat), hi = ppuRead(static_cast<std::uint16_t>(pat + 8));
+            const int bit = 7 - (localX & 7);
+            const std::uint8_t pixel = static_cast<std::uint8_t>(((lo >> bit) & 1) | (((hi >> bit) & 1) << 1));
+            if (pixel) {
+                const std::uint16_t attrAddr = static_cast<std::uint16_t>(tableBase + 0x3C0 + (tileY / 4) * 8 + tileX / 4);
+                const std::uint8_t attr = ppuRead(attrAddr);
+                const int shift = ((tileY & 2) ? 4 : 0) + ((tileX & 2) ? 2 : 0);
+                const std::uint8_t pal = static_cast<std::uint8_t>((attr >> shift) & 3);
+                output = colors[ppuRead(static_cast<std::uint16_t>(0x3F00 + pal * 4 + pixel)) & 0x3F];
+                backgroundOpaque[static_cast<std::size_t>(y) * 256 + x] = 1;
             }
-            pixels[static_cast<std::size_t>(y) * 256 + x] = output;
+        }
+        pixels[static_cast<std::size_t>(y) * 256 + x] = output;
+    }
+    if ((mask & 0x10) == 0) return;
+    const bool tall = (control & 0x20) != 0;
+    const int height = tall ? 16 : 8;
+    int drawn = 0;
+    for (int s = 0; s < 64 && drawn < 8; ++s) {
+        const std::uint8_t rawY = oam[s * 4], tile = oam[s * 4 + 1], attr = oam[s * 4 + 2];
+        const int sx = oam[s * 4 + 3], sy = static_cast<int>(rawY) + 1;
+        if (sy >= 240 || sy + height <= 0) continue;
+        ++drawn;
+        for (int row = 0; row < height; ++row) {
+            const int py = sy + row;
+            if (py < 0 || py >= 240) continue;
+            const int sourceY = (attr & 0x80) ? height - 1 - row : row;
+            std::uint16_t pat;
+            if (tall) pat = static_cast<std::uint16_t>((tile & 1) * 0x1000 + ((tile & 0xFE) + sourceY / 8) * 16 + (sourceY & 7));
+            else pat = static_cast<std::uint16_t>(((control & 8) ? 0x1000 : 0) + tile * 16 + sourceY);
+            const std::uint8_t lo = ppuRead(pat), hi = ppuRead(static_cast<std::uint16_t>(pat + 8));
+            for (int col = 0; col < 8; ++col) {
+                const int px = sx + col;
+                if (px < 0 || px >= 256 || (px < 8 && !(mask & 4))) continue;
+                const int sourceX = (attr & 0x40) ? 7 - col : col, bit = 7 - sourceX;
+                const std::uint8_t pixel = static_cast<std::uint8_t>(((lo >> bit) & 1) | (((hi >> bit) & 1) << 1));
+                if (!pixel) continue;
+                const std::size_t index = static_cast<std::size_t>(py) * 256 + px;
+                if ((attr & 0x20) && backgroundOpaque[index]) continue;
+                pixels[index] = colors[ppuRead(static_cast<std::uint16_t>(0x3F10 + (attr & 3) * 4 + pixel)) & 0x3F];
+            }
         }
     }
 }
-
 std::uint8_t PPU2C02::cpuRead(std::uint16_t registerAddress) {
     const std::uint8_t reg = static_cast<std::uint8_t>(registerAddress & 0x07);
     std::uint8_t value = openBus;
@@ -184,10 +197,12 @@ void PPU2C02::cpuWrite(std::uint16_t registerAddress, std::uint8_t value) {
             break;
         case 5:
             if (!writeSecond) {
+                scrollX = value;
                 fineX = value & 0x07;
                 temporaryAddress = static_cast<std::uint16_t>(
                     (temporaryAddress & 0xFFE0) | (value >> 3));
             } else {
+                scrollY = value;
                 temporaryAddress = static_cast<std::uint16_t>(
                     (temporaryAddress & 0x8C1F) |
                     ((value & 0x07) << 12) |
