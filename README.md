@@ -2,13 +2,16 @@
 
 A custom NES emulator built from scratch in C++ using SDL2, designed for Linux.
 
-The project is in early development. The first milestone is a working SDL2 application; CPU, memory, cartridge, PPU, audio, and controller emulation will be added in stages.
+The project is in early development. It currently has an SDL2 application and an iNES cartridge loader for NROM (mapper 0). The CPU, memory bus, PPU, audio, and controller emulation will be added in stages.
 
 ## Current status
 
 - [x] C++20 and CMake project setup
 - [x] SDL2 application window
-- [ ] iNES cartridge / ROM loading
+- [x] Standard iNES header parsing
+- [x] NROM (mapper 0) PRG-ROM loading
+- [x] CHR-ROM loading and CHR-RAM allocation
+- [x] Trainer offset and mirroring detection
 - [ ] NES memory bus
 - [ ] 6502 CPU (Ricoh 2A03)
 - [ ] PPU graphics
@@ -39,17 +42,25 @@ cmake -S . -B build
 cmake --build build -j$(nproc)
 ```
 
-Run it:
+Run the empty emulator window:
 
 ```bash
 ./build/nes-emulator
 ```
 
+Load a compatible standard iNES NROM ROM:
+
+```bash
+./build/nes-emulator /path/to/game.nes
+```
+
+The current loader supports mapper 0 cartridges with 16 or 32 KiB of PRG-ROM and either 8 KiB of CHR-ROM or CHR-RAM. NES 2.0 headers and other mappers are not supported yet. A successfully loaded ROM is reported in the terminal; game graphics are not implemented yet.
+
 Press **Escape** to close the window.
 
 ## Project direction
 
-The emulator core will be implemented in this repository rather than wrapping an existing emulator. Initial cartridge support will target the simple NROM (mapper 0) format before expanding to other mappers.
+The emulator core is being implemented in this repository rather than wrapping an existing emulator. We are starting with NROM (mapper 0), then building the CPU, memory bus, PPU, controllers, and audio.
 
 ## Contributions
 
