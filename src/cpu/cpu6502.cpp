@@ -140,6 +140,14 @@ bool CPU6502::step() {
         case 0xC8: ++y; setZeroNegative(y); break;
         case 0x88: --y; setZeroNegative(y); break;
 
+        // Accumulator shifts
+        case 0x0A: {
+            setFlag(FLAG_CARRY, (a & 0x80) != 0);
+            a = static_cast<std::uint8_t>(a << 1);
+            setZeroNegative(a);
+            break;
+        }
+
         // Immediate logic, arithmetic, and comparisons
         case 0x29: a &= fetch(); setZeroNegative(a); break;
         case 0x09: a |= fetch(); setZeroNegative(a); break;
