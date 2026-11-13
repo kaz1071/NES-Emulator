@@ -174,6 +174,22 @@ bool CPU6502::step() {
             break;
         }
 
+        // Subroutine and jump instructions
+        case 0x20: {
+            const target = fetchWord();
+            const returnAddress = static_cast<std::uint16_t>(pc - 1);
+            push(static_cast<std::uint8_t>((returnAddress >> 8) & 0xFF));
+            push(static_cast<std::uint8_t>(returnAddress & 0xFF));
+            pc = target;
+            break;
+        }
+        case 0x60: {
+            const std::uint8_t low = pop();
+            const std::uint8_t high = pop();
+            pc = static_cast<std::uint16_t>(
+                (low | (static_cast<std::uint16_t>(high) << 8)) + 1);
+            break;
+        }
         case 0x4C: pc = fetchWord(); break;
         case 0xEA: break;
         case 0x00:
