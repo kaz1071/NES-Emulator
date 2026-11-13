@@ -16,6 +16,7 @@ public:
     std::uint8_t debugStatus() const { return status; }
     std::uint8_t debugPalette() const { return paletteRam[0]; }
     std::size_t debugNametableNonZero() const;
+    std::size_t debugNametableTableNonZero(std::size_t table) const;
     std::size_t debugChrNonZero() const;
     std::size_t debugSelectedPatternNonZero() const;
     std::size_t debugPaletteNonZero() const;
