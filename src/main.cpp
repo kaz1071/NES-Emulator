@@ -217,7 +217,9 @@ int main(int argc, char** argv) {
                     const std::filesystem::path path(selected);
                     if (!loadCartridge(path, nextCartridge, error)) {
                         std::cerr << "ROM loading failed: " << error << '\n';
-                        SDL_SetWindowTitle(window, "NES Emulator - ROM load failed (see terminal)");
+                        SDL_SetWindowTitle(window, "NES Emulator - ROM load failed");
+                        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+                            "ROM could not be loaded", error.c_str(), window);
                     } else {
                         cartridge = std::move(nextCartridge);
                         hasCartridge = true;
@@ -232,6 +234,8 @@ int main(int argc, char** argv) {
                         std::cout << "CPU reset complete. 6502 reset vector: $" << std::hex
                                   << cpu.pc << std::dec << '\n'
                                   << "Experimental CPU execution active (partial 6502 instruction set; not cycle-accurate).\n";
+                        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
+                            "ROM loaded", "The ROM file was loaded. Game compatibility is still experimental, so the screen may remain black if the game uses unsupported CPU instructions or PPU features.", window);
                     }
                 }
             }
