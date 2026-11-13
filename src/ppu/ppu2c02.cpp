@@ -109,6 +109,15 @@ std::size_t PPU2C02::debugChrNonZero() const {
     return count;
 }
 
+std::size_t PPU2C02::debugSelectedPatternNonZero() const {
+    const std::uint16_t base = (control & 0x10) ? 0x1000 : 0x0000;
+    std::size_t count = 0;
+    for (std::uint16_t offset = 0; offset < 0x1000; ++offset) {
+        if (ppuRead(static_cast<std::uint16_t>(base + offset)) != 0) ++count;
+    }
+    return count;
+}
+
 std::size_t PPU2C02::debugPaletteNonZero() const {
     return static_cast<std::size_t>(std::count_if(paletteRam.begin(), paletteRam.end(),
         [](std::uint8_t value) { return value != 0; }));
