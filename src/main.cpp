@@ -4,6 +4,7 @@
 #include "bus/bus.hpp"
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <string>
