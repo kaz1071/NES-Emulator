@@ -10,6 +10,7 @@ public:
     void connectCartridge(Cartridge* cartridge);
     void reset();
     void clockPpu();
+    void clockCpuCycle();
     bool consumeNmi();
     bool irqPending() const;
     std::uint8_t read(std::uint16_t address);
