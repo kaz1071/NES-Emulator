@@ -105,6 +105,19 @@ bool CPU6502::step() {
         return true;
     }
 
+    // MMC3 uses a maskable IRQ for split-screen effects and raster timing.
+    if (bus != nullptr && bus->irqPending() && !getFlag(FLAG_INTERRUPT)) {
+        push(static_cast<std::uint8_t>((pc >> 8) & 0xFF));
+        push(static_cast<std::uint8_t>(pc & 0xFF));
+        push(static_cast<std::uint8_t>((status & ~FLAG_BREAK) | FLAG_UNUSED));
+        setFlag(FLAG_INTERRUPT, true);
+        const std::uint8_t low = read(0xFFFE);
+        const std::uint8_t high = read(0xFFFF);
+        pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
+        lastStepCycleCount = 7;
+        return true;
+    }
+
     const auto fetch = [this]() { return read(pc++); };
     const auto fetchWord = [&fetch]() {
         const std::uint8_t low = fetch();
