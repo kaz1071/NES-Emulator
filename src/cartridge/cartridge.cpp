@@ -155,7 +155,7 @@ std::uint8_t Cartridge::readChr(std::uint16_t address) const {
         if (!inv) {
             if (slot < 2) bank = (mmc3BankRegisters[0] & 0xFE) + slot;
             else if (slot < 4) bank = (mmc3BankRegisters[1] & 0xFE) + slot - 2;
-            else bank = mmc3BankRegisters[slot + 2];
+            else bank = mmc3BankRegisters[slot - 2];
         } else {
             if (slot < 4) bank = mmc3BankRegisters[slot + 2];
             else if (slot < 6) bank = (mmc3BankRegisters[0] & 0xFE) + slot - 4;
