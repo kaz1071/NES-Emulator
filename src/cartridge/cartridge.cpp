@@ -27,6 +27,13 @@ bool Cartridge::irqPending() const {
     return mapper == 4 && mmc3IrqPending;
 }
 
+void Cartridge::clockCpuCycle() {
+    if (mapper == 40 && mapper40IrqEnabled) {
+        ++mapper40IrqCounter;
+        if (mapper40IrqCounter >= 4096) mapper40IrqEnabled = false;
+    }
+}
+
 void Cartridge::clockScanline() {
     if (mapper != 4) return;
     if (mmc3IrqCounter == 0 || mmc3IrqReload) {
@@ -39,8 +46,16 @@ void Cartridge::clockScanline() {
 }
 
 std::uint8_t Cartridge::readPrg(std::uint16_t address) const {
-    if (prgRom.empty() || address < 0x8000) return 0;
-    std::size_t offset = static_cast<std::size_t>(address - 0x8000);
+    if (prgRom.empty() || address < (mapper == 40 ? 0x6000 : 0x8000)) return 0;
+    std::size_t offset = static_cast<std::size_t>(address - (mapper == 40 ? 0x6000 : 0x8000));
+    if (mapper == 40) {
+        const std::size_t count = prgRom.size() / 0x2000;
+        if (count < 8) return 0;
+        const std::size_t slot = (address - 0x6000) / 0x2000;
+        const std::size_t bank = slot == 0 ? 6 : slot == 1 ? 4 : slot == 2 ? 5 :
+            slot == 3 ? (mapper40PrgBank & 7) : 7;
+        return prgRom[(bank % count) * 0x2000 + (address & 0x1FFF)];
+    }
     if (mapper == 1) {
         const std::size_t count = prgRom.size() / PRG_BANK_SIZE;
         if (!count) return 0;
@@ -73,6 +88,20 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) const {
 }
 
 void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
+    if (mapper == 40) {
+        if (address >= 0x8000 && address < 0xA000) {
+            mapper40IrqEnabled = false;
+            mapper40IrqCounter = 0;
+        } else if (address >= 0xA000 && address < 0xC000) {
+            if (!mapper40IrqEnabled) {
+                mapper40IrqCounter = 0;
+                mapper40IrqEnabled = true;
+            }
+        } else if (address >= 0xE000) {
+            mapper40PrgBank = value & 7;
+        }
+        return;
+    }
     if (address < 0x8000) return;
     if (mapper == 66) {
         prgBank = static_cast<std::uint8_t>((value >> 4) & 3);
@@ -234,9 +263,9 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::uint8_t mapper =
         static_cast<std::uint8_t>((flags6 >> 4) | (flags7 & 0xF0));
 
-    if (mapper != 0 && mapper != 1 && mapper != 4 && mapper != 66) {
+    if (mapper != 0 && mapper != 1 && mapper != 4 && mapper != 40 && mapper != 66) {
         error = "Unsupported mapper " + std::to_string(mapper) +
-                ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), and mapper 66 (GxROM).";
+                ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), mapper 40 (NTDEC 2722), and mapper 66 (GxROM).";
         return false;
     }
 
@@ -254,6 +283,11 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
          prgSize > 4 * GXMROM_PRG_BANK_SIZE ||
          prgSize % GXMROM_PRG_BANK_SIZE != 0)) {
         error = "Mapper 66 requires 1 to 4 complete 32 KiB PRG-ROM banks.";
+        return false;
+    }
+
+    if (mapper == 40 && (prgSize < 64 * 1024 || prgSize % 8192 != 0)) {
+        error = "Mapper 40 requires at least 64 KiB of PRG-ROM in 8 KiB banks.";
         return false;
     }
 
