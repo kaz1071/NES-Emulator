@@ -505,7 +505,11 @@ int main(int argc, char** argv) {
     std::vector<PreloadedRom> preloadedRoms;
     std::deque<EmulatorSnapshot> rewindHistory;
     int rewindCaptureDivider = 0;
-    constexpr std::size_t MAX_REWIND_SNAPSHOTS = 90;
+    constexpr std::array<int, 4> REWIND_OPTIONS{{3, 5, 10, 15}};
+    int rewindDurationSeconds = 10;
+    const auto maxRewindSnapshots = [&]() {
+        return static_cast<std::size_t>(rewindDurationSeconds * 30 + 1);
+    };
     if (hasCartridge) rewindHistory.push_back(captureSnapshot(cpu, bus, cpuCycleRemainder));
     while (running) {
         SDL_Event event{};
@@ -519,6 +523,24 @@ int main(int argc, char** argv) {
                 } else {
                     std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\n';
                 }
+            }
+
+            if (event.type == SDL_KEYDOWN && event.key.repeat == 0 && hasCartridge &&
+                event.key.keysym.sym == SDLK_F6) {
+                const auto current = std::find(REWIND_OPTIONS.begin(), REWIND_OPTIONS.end(),
+                                               rewindDurationSeconds);
+                const auto next = current == REWIND_OPTIONS.end() ||
+                                  std::next(current) == REWIND_OPTIONS.end()
+                    ? REWIND_OPTIONS.begin() : std::next(current);
+                rewindDurationSeconds = *next;
+                while (rewindHistory.size() > maxRewindSnapshots())
+                    rewindHistory.pop_front();
+                const std::string message = "Rewind length is now " +
+                    std::to_string(rewindDurationSeconds) +
+                    " seconds. The history will fill to this length as you play.";
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
+                    "Rewind length", message.c_str(), window);
+                std::cout << message << '\\n';
             }
 
             if (event.type == SDL_KEYDOWN && event.key.repeat == 0 && hasCartridge &&
@@ -687,7 +709,7 @@ int main(int argc, char** argv) {
             if (++rewindCaptureDivider >= 2) {
                 rewindHistory.push_back(captureSnapshot(cpu, bus, cpuCycleRemainder));
                 rewindCaptureDivider = 0;
-                while (rewindHistory.size() > MAX_REWIND_SNAPSHOTS)
+                while (rewindHistory.size() > maxRewindSnapshots())
                     rewindHistory.pop_front();
             }
         }
