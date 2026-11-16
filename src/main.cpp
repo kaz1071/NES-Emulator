@@ -6,6 +6,9 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
+#include <deque>
+#include <type_traits>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -15,6 +18,132 @@
 #include <unistd.h>
 
 namespace {
+struct EmulatorSnapshot {
+    CPU6502::State cpu;
+    NESBus::State bus;
+    std::int32_t cpuCycleRemainder = 0;
+};
+static_assert(std::is_trivially_copyable_v<CPU6502::State>);
+static_assert(std::is_trivially_copyable_v<NESBus::State>);
+
+EmulatorSnapshot captureSnapshot(const CPU6502& cpu, const NESBus& bus,
+                                 int cpuCycleRemainder) {
+    return {cpu.saveState(), bus.saveState(), cpuCycleRemainder};
+}
+
+bool restoreSnapshot(const EmulatorSnapshot& snapshot, CPU6502& cpu,
+                     NESBus& bus, int& cpuCycleRemainder) {
+    if (!bus.loadState(snapshot.bus)) return false;
+    cpu.loadState(snapshot.cpu);
+    cpuCycleRemainder = snapshot.cpuCycleRemainder;
+    return true;
+}
+
+bool saveStateFile(const std::filesystem::path& path, const Cartridge& cartridge,
+                   const CPU6502& cpu, const NESBus& bus, int cpuCycleRemainder,
+                   std::string& error) {
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    if (!file) { error = "Could not create save-state file."; return false; }
+    constexpr char magic[8] = {'N','E','S','S','A','V','E','1'};
+    constexpr std::uint32_t version = 1;
+    const std::uint64_t fingerprint = cartridge.romFingerprint();
+    const std::uint8_t mapper = cartridge.mapper;
+    const auto cpuState = cpu.saveState();
+    const auto busState = bus.saveState();
+    const std::int32_t remainder = cpuCycleRemainder;
+    file.write(magic, sizeof(magic));
+    file.write(reinterpret_cast<const char*>(&version), sizeof(version));
+    file.write(reinterpret_cast<const char*>(&fingerprint), sizeof(fingerprint));
+    file.write(reinterpret_cast<const char*>(&mapper), sizeof(mapper));
+    file.write(reinterpret_cast<const char*>(&cpuState), sizeof(cpuState));
+    file.write(reinterpret_cast<const char*>(&busState), sizeof(busState));
+    file.write(reinterpret_cast<const char*>(&remainder), sizeof(remainder));
+    if (!file) { error = "The save-state file could not be written completely."; return false; }
+    return true;
+}
+
+bool loadStateFile(const std::filesystem::path& path, const Cartridge& cartridge,
+                   CPU6502& cpu, NESBus& bus, int& cpuCycleRemainder,
+                   std::string& error) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file) { error = "Could not open save-state file."; return false; }
+    char magic[8]{};
+    std::uint32_t version = 0;
+    std::uint64_t fingerprint = 0;
+    std::uint8_t mapper = 0;
+    EmulatorSnapshot snapshot{};
+    file.read(magic, sizeof(magic));
+    file.read(reinterpret_cast<char*>(&version), sizeof(version));
+    file.read(reinterpret_cast<char*>(&fingerprint), sizeof(fingerprint));
+    file.read(reinterpret_cast<char*>(&mapper), sizeof(mapper));
+    file.read(reinterpret_cast<char*>(&snapshot.cpu), sizeof(snapshot.cpu));
+    file.read(reinterpret_cast<char*>(&snapshot.bus), sizeof(snapshot.bus));
+    file.read(reinterpret_cast<char*>(&snapshot.cpuCycleRemainder),
+              sizeof(snapshot.cpuCycleRemainder));
+    constexpr char expectedMagic[8] = {'N','E','S','S','A','V','E','1'};
+    if (!file || !std::equal(std::begin(magic), std::end(magic), std::begin(expectedMagic))) {
+        error = "This is not a valid NES Emulator save-state file.";
+        return false;
+    }
+    if (version != 1) { error = "This save-state version is not supported."; return false; }
+    if (mapper != cartridge.mapper || fingerprint != cartridge.romFingerprint()) {
+        error = "This save state belongs to a different ROM. Load the matching game first.";
+        return false;
+    }
+    if (!restoreSnapshot(snapshot, cpu, bus, cpuCycleRemainder)) {
+        error = "The save state is incompatible with the currently loaded cartridge.";
+        return false;
+    }
+    return true;
+}
+
+std::string chooseStateFile(bool save) {
+    int pipeFd[2];
+    if (pipe(pipeFd) != 0) return {};
+    const pid_t child = fork();
+    if (child < 0) { close(pipeFd[0]); close(pipeFd[1]); return {}; }
+    if (child == 0) {
+        close(pipeFd[0]);
+        dup2(pipeFd[1], STDOUT_FILENO);
+        close(pipeFd[1]);
+        const std::string suggested = (std::filesystem::current_path() /
+            "game.savestate").string();
+        const std::string filenameArg = "--filename=" + suggested;
+        char* zenitySave[] = {const_cast<char*>("zenity"),
+            const_cast<char*>("--file-selection"), const_cast<char*>("--save"),
+            const_cast<char*>("--confirm-overwrite"), const_cast<char*>("--file-filter=NES Save States | *.savestate"),
+            const_cast<char*>("--title=Save NES State"), const_cast<char*>(filenameArg.c_str()), nullptr};
+        char* zenityLoad[] = {const_cast<char*>("zenity"),
+            const_cast<char*>("--file-selection"),
+            const_cast<char*>("--file-filter=NES Save States | *.savestate"),
+            const_cast<char*>("--title=Load NES State"), nullptr};
+        execvp("zenity", save ? zenitySave : zenityLoad);
+        char* kdialogSave[] = {const_cast<char*>("kdialog"),
+            const_cast<char*>("--getsavefilename"), const_cast<char*>(suggested.c_str()),
+            const_cast<char*>("*.savestate|NES Save States"), const_cast<char*>("--title"),
+            const_cast<char*>("Save NES State"), nullptr};
+        char* kdialogLoad[] = {const_cast<char*>("kdialog"),
+            const_cast<char*>("--getopenfilename"), const_cast<char*>(""),
+            const_cast<char*>("*.savestate|NES Save States"), const_cast<char*>("--title"),
+            const_cast<char*>("Load NES State"), nullptr};
+        execvp("kdialog", save ? kdialogSave : kdialogLoad);
+        _exit(127);
+    }
+    close(pipeFd[1]);
+    std::string path;
+    char buffer[512];
+    ssize_t bytes = 0;
+    while ((bytes = read(pipeFd[0], buffer, sizeof(buffer))) > 0)
+        path.append(buffer, static_cast<std::size_t>(bytes));
+    close(pipeFd[0]);
+    int status = 0;
+    waitpid(child, &status, 0);
+    while (!path.empty() && (path.back() == '\n' || path.back() == '\r'))
+        path.pop_back();
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) return {};
+    return path;
+}
+
 constexpr int WINDOW_WIDTH = 768, WINDOW_HEIGHT = 768;
 constexpr int NES_WIDTH = 256, NES_HEIGHT = 240;
 
@@ -373,6 +502,10 @@ int main(int argc, char** argv) {
     bool showPreloadedMenu = false;
     bool showDownloadMenu = false;
     std::vector<PreloadedRom> preloadedRoms;
+    std::deque<EmulatorSnapshot> rewindHistory;
+    int rewindCaptureDivider = 0;
+    constexpr std::size_t MAX_REWIND_SNAPSHOTS = 90;
+    if (hasCartridge) rewindHistory.push_back(captureSnapshot(cpu, bus, cpuCycleRemainder));
     while (running) {
         SDL_Event event{};
         while (SDL_PollEvent(&event)) {
@@ -384,6 +517,35 @@ int main(int argc, char** argv) {
                     fullscreen = !fullscreen;
                 } else {
                     std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\n';
+                }
+            }
+
+            if (event.type == SDL_KEYDOWN && event.key.repeat == 0 && hasCartridge &&
+                (event.key.keysym.sym == SDLK_F5 || event.key.keysym.sym == SDLK_F8)) {
+                const bool saving = event.key.keysym.sym == SDLK_F5;
+                const std::string selectedPath = chooseStateFile(saving);
+                if (!selectedPath.empty()) {
+                    std::string stateError;
+                    const bool success = saving
+                        ? saveStateFile(selectedPath, cartridge, cpu, bus,
+                                        cpuCycleRemainder, stateError)
+                        : loadStateFile(selectedPath, cartridge, cpu, bus,
+                                        cpuCycleRemainder, stateError);
+                    if (success) {
+                        if (!saving) {
+                            rewindHistory.clear();
+                            rewindHistory.push_back(captureSnapshot(cpu, bus, cpuCycleRemainder));
+                            rewindCaptureDivider = 0;
+                        }
+                        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
+                            saving ? "Save state created" : "Save state loaded",
+                            saving ? "Your game state was saved to the selected file."
+                                   : "Your game has been restored from the selected file.",
+                            window);
+                    } else {
+                        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+                            "Save state error", stateError.c_str(), window);
+                    }
                 }
             }
             if (event.type == SDL_MOUSEBUTTONDOWN &&
@@ -456,6 +618,10 @@ int main(int argc, char** argv) {
                         bus.reset();
                         cpu.connectBus(&bus);
                         cpu.reset();
+                        cpuCycleRemainder = 0;
+                        rewindHistory.clear();
+                        rewindHistory.push_back(captureSnapshot(cpu, bus, cpuCycleRemainder));
+                        rewindCaptureDivider = 0;
                         windowTitle = "NES Emulator - " + path.filename().string();
                         SDL_SetWindowTitle(window, windowTitle.c_str());
                         printCartridgeInfo(cartridge, path);
@@ -481,7 +647,17 @@ int main(int argc, char** argv) {
         if (keys[SDL_SCANCODE_RIGHT]) controller1 |= 0x80;
         bus.setControllerState(0, controller1);
 
-        if (hasCartridge && !cpu.halted()) {
+        const bool rewindHeld = keys[SDL_SCANCODE_R] != 0;
+        const bool rewinding = hasCartridge && rewindHeld;
+        if (rewinding && rewindHistory.size() > 1) {
+            rewindHistory.pop_back();
+            if (!restoreSnapshot(rewindHistory.back(), cpu, bus, cpuCycleRemainder)) {
+                rewindHistory.clear();
+                rewindHistory.push_back(captureSnapshot(cpu, bus, cpuCycleRemainder));
+            }
+        }
+
+        if (hasCartridge && !cpu.halted() && !rewinding) {
             cpuCycleRemainder += 89342;
             const int cpuCyclesTarget = cpuCycleRemainder / 3;
             cpuCycleRemainder %= 3;
@@ -497,6 +673,15 @@ int main(int argc, char** argv) {
                 ++instructionsSinceDiagnostic;
                 const int instructionCycles = cpu.lastStepCycles();
                 cpuCyclesThisFrame += instructionCycles;
+            }
+        }
+
+        if (hasCartridge && !rewinding && !cpu.halted()) {
+            if (++rewindCaptureDivider >= 2) {
+                rewindHistory.push_back(captureSnapshot(cpu, bus, cpuCycleRemainder));
+                rewindCaptureDivider = 0;
+                while (rewindHistory.size() > MAX_REWIND_SNAPSHOTS)
+                    rewindHistory.pop_front();
             }
         }
 
