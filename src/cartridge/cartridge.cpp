@@ -24,7 +24,8 @@ bool Cartridge::prgRamWritable() const {
 }
 
 bool Cartridge::irqPending() const {
-    return mapper == 4 && mmc3IrqPending;
+    return (mapper == 4 && mmc3IrqPending) ||
+           (mapper == 40 && mapper40IrqPending);
 }
 
 void Cartridge::clockCpuCycle() {
