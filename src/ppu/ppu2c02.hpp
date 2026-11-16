@@ -68,7 +68,12 @@ private:
     std::uint64_t vblankEvents = 0;
     std::uint64_t vblankStatusReads = 0;
     std::uint8_t lastStatusRead = 0;
+    std::array<std::uint16_t, 240> lineScrollAddress{};
+    std::array<std::uint8_t, 240> lineFineX{};
 
+    void incrementScrollX();
+    void incrementScrollY();
+    std::uint8_t backgroundPixelAt(int x, int y, std::uint8_t* paletteSlot = nullptr) const;
     std::uint16_t mapNametableAddress(std::uint16_t address) const;
     static std::uint8_t mapPaletteAddress(std::uint16_t address);
 };
