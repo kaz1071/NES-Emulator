@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(NES_Emulator VERSION 0.26.0 LANGUAGES CXX)
+project(NES_Emulator VERSION 0.27.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,4 +22,24 @@ target_compile_options(nes-emulator PRIVATE
     -Wall
     -Wextra
     -Wpedantic
+)
+
+include(GNUInstallDirs)
+
+install(TARGETS nes-emulator
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+configure_file(
+    data/pixelcore-nes.desktop.in
+    pixelcore-nes.desktop
+    @ONLY
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pixelcore-nes.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
+install(FILES data/pixelcore-nes.svg
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
 )
