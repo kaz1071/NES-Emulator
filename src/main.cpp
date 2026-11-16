@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
+#include <vector>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -73,17 +74,19 @@ std::string chooseRomFile() {
     return path;
 }
 
-constexpr int BUTTON_WIDTH = 320;
-constexpr int BUTTON_HEIGHT = 72;
-constexpr int BUTTON_GAP = 18;
+constexpr int BUTTON_WIDTH = 460;
+constexpr int BUTTON_HEIGHT = 64;
+constexpr int BUTTON_GAP = 12;
 
-std::array<SDL_Rect, 3> menuButtons(int width, int height) {
+std::array<SDL_Rect, 4> menuButtons(int width, int height) {
     const int x = (width - BUTTON_WIDTH) / 2;
-    const int firstY = height / 2 - (3 * BUTTON_HEIGHT + 2 * BUTTON_GAP) / 2;
+    const int totalHeight = 4 * BUTTON_HEIGHT + 3 * BUTTON_GAP;
+    const int firstY = (height - totalHeight) / 2;
     return {{
         {x, firstY, BUTTON_WIDTH, BUTTON_HEIGHT},
         {x, firstY + BUTTON_HEIGHT + BUTTON_GAP, BUTTON_WIDTH, BUTTON_HEIGHT},
-        {x, firstY + 2 * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT}
+        {x, firstY + 2 * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT},
+        {x, firstY + 3 * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT}
     }};
 }
 
@@ -116,6 +119,11 @@ std::array<unsigned char, 7> glyphFor(char c) {
         case 'T': return {{31,4,4,4,4,4,4}};
         case 'F': return {{31,16,16,30,16,16,16}};
         case 'S': return {{15,16,16,14,1,1,30}};
+        case 'P': return {{30,17,17,30,16,16,16}};
+        case 'B': return {{30,17,17,30,17,17,30}};
+        case 'H': return {{17,17,17,31,17,17,17}};
+        case 'V': return {{17,17,17,17,17,10,4}};
+        case 'Z': return {{31,1,2,4,8,16,31}};
         default: return {{0,0,0,0,0,0,0}};
     }
 }
@@ -136,8 +144,8 @@ void drawMenuButton(SDL_Renderer* renderer, const SDL_Rect& button,
     const int originY = button.y + (button.h - 7 * scale) / 2;
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     int x = originX;
-    for (char c : label) {
-        const auto glyph = glyphFor(c);
+    for (char ch : label) {
+        const auto glyph = glyphFor(ch);
         for (int y = 0; y < 7; ++y) {
             for (int col = 0; col < 5; ++col) {
                 if (glyph[y] & (1U << (4 - col))) {
@@ -154,8 +162,58 @@ void drawMenuButton(SDL_Renderer* renderer, const SDL_Rect& button,
 void drawMenuButtons(SDL_Renderer* renderer, int width, int height) {
     const auto buttons = menuButtons(width, height);
     drawMenuButton(renderer, buttons[0], "LOAD ROM");
-    drawMenuButton(renderer, buttons[1], "FULLSCREEN");
-    drawMenuButton(renderer, buttons[2], "QUIT");
+    drawMenuButton(renderer, buttons[1], "PRELOADED ROMS");
+    drawMenuButton(renderer, buttons[2], "FULLSCREEN");
+    drawMenuButton(renderer, buttons[3], "QUIT");
+}
+
+using PreloadedRom = std::pair<std::string, std::filesystem::path>;
+
+std::vector<PreloadedRom> findPreloadedRoms() {
+    const auto folder = std::filesystem::current_path() / "roms";
+    const std::array<std::pair<const char*, const char*>, 5> games{{
+        {"ZELDA", "Legend of Zelda, The (USA) (Rev 1).nes"},
+        {"MARIO DUCK HUNT", "Super Mario Bros. + Duck Hunt (USA).nes"},
+        {"MARIO BROS 2", "Super Mario Bros. 2 (USA) (Rev 1).nes"},
+        {"LOST LEVELS", "Super Mario Bros 2 (Lost Levels) (Unl).nes"},
+        {"MARIO BROS 3", "Super Mario Bros. 3 (USA) (Rev 1).nes"}
+    }};
+    std::vector<PreloadedRom> found;
+    for (const auto& game : games) {
+        const auto path = folder / game.second;
+        std::error_code error;
+        if (std::filesystem::is_regular_file(path, error))
+            found.emplace_back(game.first, path);
+    }
+    return found;
+}
+
+std::vector<SDL_Rect> preloadedMenuButtons(int width, int height,
+                                           std::size_t gameCount) {
+    constexpr int buttonWidth = 600, buttonHeight = 56, gap = 10;
+    const std::size_t rows = std::max<std::size_t>(1, gameCount) + 1;
+    const int totalHeight = static_cast<int>(rows) * buttonHeight
+                          + static_cast<int>(rows - 1) * gap;
+    const int x = (width - buttonWidth) / 2;
+    const int firstY = (height - totalHeight) / 2;
+    std::vector<SDL_Rect> buttons;
+    buttons.reserve(rows);
+    for (std::size_t i = 0; i < rows; ++i)
+        buttons.push_back({x, firstY + static_cast<int>(i) * (buttonHeight + gap),
+                           buttonWidth, buttonHeight});
+    return buttons;
+}
+
+void drawPreloadedMenu(SDL_Renderer* renderer, int width, int height,
+                       const std::vector<PreloadedRom>& roms) {
+    const auto buttons = preloadedMenuButtons(width, height, roms.size());
+    if (roms.empty()) {
+        drawMenuButton(renderer, buttons[0], "NO ROMS FOUND");
+    } else {
+        for (std::size_t i = 0; i < roms.size(); ++i)
+            drawMenuButton(renderer, buttons[i], roms[i].first);
+    }
+    drawMenuButton(renderer, buttons.back(), "BACK");
 }
 
 void printCartridgeInfo(const Cartridge& c, const std::filesystem::path& path) {
@@ -253,6 +311,8 @@ int main(int argc, char** argv) {
 
     bool running = true;
     bool fullscreen = false;
+    bool showPreloadedMenu = false;
+    std::vector<PreloadedRom> preloadedRoms;
     while (running) {
         SDL_Event event{};
         while (SDL_PollEvent(&event)) {
@@ -266,33 +326,56 @@ int main(int argc, char** argv) {
                     std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\n';
                 }
             }
-            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            if (event.type == SDL_MOUSEBUTTONDOWN &&
+                event.button.button == SDL_BUTTON_LEFT) {
                 int windowWidth = 0, windowHeight = 0;
                 SDL_GetWindowSize(window, &windowWidth, &windowHeight);
-                const auto buttons = menuButtons(windowWidth, windowHeight);
-                if (contains(buttons[2], event.button.x, event.button.y)) {
-                    running = false;
-                } else if (contains(buttons[1], event.button.x, event.button.y)) {
-                    const Uint32 mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-                    if (SDL_SetWindowFullscreen(window, mode) == 0) {
-                        fullscreen = !fullscreen;
-                    } else {
-                        std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\n';
+                std::string selectedRom;
+
+                if (showPreloadedMenu) {
+                    const auto buttons = preloadedMenuButtons(
+                        windowWidth, windowHeight, preloadedRoms.size());
+                    if (contains(buttons.back(), event.button.x, event.button.y)) {
+                        showPreloadedMenu = false;
+                    } else if (!preloadedRoms.empty()) {
+                        for (std::size_t i = 0; i < preloadedRoms.size(); ++i) {
+                            if (contains(buttons[i], event.button.x, event.button.y)) {
+                                selectedRom = preloadedRoms[i].second.string();
+                                break;
+                            }
+                        }
                     }
-                } else if (contains(buttons[0], event.button.x, event.button.y)) {
-                const std::string selected = chooseRomFile();
-                if (!selected.empty()) {
+                } else {
+                    const auto buttons = menuButtons(windowWidth, windowHeight);
+                    if (contains(buttons[3], event.button.x, event.button.y)) {
+                        running = false;
+                    } else if (contains(buttons[2], event.button.x, event.button.y)) {
+                        const Uint32 mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+                        if (SDL_SetWindowFullscreen(window, mode) == 0)
+                            fullscreen = !fullscreen;
+                        else
+                            std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\\n';
+                    } else if (contains(buttons[1], event.button.x, event.button.y)) {
+                        preloadedRoms = findPreloadedRoms();
+                        showPreloadedMenu = true;
+                    } else if (contains(buttons[0], event.button.x, event.button.y)) {
+                        selectedRom = chooseRomFile();
+                    }
+                }
+
+                if (!selectedRom.empty()) {
                     Cartridge nextCartridge;
                     std::string error;
-                    const std::filesystem::path path(selected);
+                    const std::filesystem::path path(selectedRom);
                     if (!loadCartridge(path, nextCartridge, error)) {
-                        std::cerr << "ROM loading failed: " << error << '\n';
+                        std::cerr << "ROM loading failed: " << error << '\\n';
                         SDL_SetWindowTitle(window, "NES Emulator - ROM load failed");
                         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
                             "ROM could not be loaded", error.c_str(), window);
                     } else {
                         cartridge = std::move(nextCartridge);
                         hasCartridge = true;
+                        showPreloadedMenu = false;
                         cpuStopReported = false;
                         bus.connectCartridge(&cartridge);
                         bus.reset();
@@ -302,13 +385,12 @@ int main(int argc, char** argv) {
                         SDL_SetWindowTitle(window, windowTitle.c_str());
                         printCartridgeInfo(cartridge, path);
                         std::cout << "CPU reset complete. 6502 reset vector: $" << std::hex
-                                  << cpu.pc << std::dec << '\n'
-                                  << "Experimental CPU execution active (official 6502 opcodes supported; instruction-cycle timing enabled, not cycle-perfect).\n";
+                                  << cpu.pc << std::dec << '\\n'
+                                  << "Experimental CPU execution active (official 6502 opcodes supported; instruction-cycle timing enabled, not cycle-perfect).\\n";
                         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
                             "ROM loaded", "The ROM file was loaded. Game compatibility is still experimental, so the screen may remain black if the game uses unsupported CPU instructions or PPU features.", window);
                     }
                 }
-            }
             }
         }
 
@@ -388,7 +470,12 @@ int main(int argc, char** argv) {
         SDL_RenderClear(renderer);
         const SDL_Rect gameArea = gameRectangle(outputWidth, outputHeight);
         SDL_RenderCopy(renderer, screen, nullptr, &gameArea);
-        if (!hasCartridge) drawMenuButtons(renderer, outputWidth, outputHeight);
+        if (!hasCartridge) {
+            if (showPreloadedMenu)
+                drawPreloadedMenu(renderer, outputWidth, outputHeight, preloadedRoms);
+            else
+                drawMenuButtons(renderer, outputWidth, outputHeight);
+        }
         SDL_RenderPresent(renderer);
 
         // Keep game time close to real NTSC speed when the host can keep up.
