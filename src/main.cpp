@@ -435,36 +435,26 @@ int main(int argc, char** argv) {
             std::cout << "Frame debug: unique-colors=" << colorCount
                       << " non-black-pixels=" << nonBlackPixels << "/"
                       << frame.size() << '\n';
-            // Inspect the final five NES columns for a persistent edge-color
-            // anomaly. Report the most common output colors in each column.
-            std::cout << "Right-edge pixels (x=251..255; color:count):";
-            for (int x = 251; x < 256; ++x) {
-                std::array<std::pair<std::uint32_t, int>, 240> frequencies{};
-                int used = 0;
-                for (int y = 0; y < NES_HEIGHT; ++y) {
-                    const std::uint32_t color =
-                        frame[static_cast<std::size_t>(y) * NES_WIDTH + x];
-                    int slot = 0;
-                    while (slot < used && frequencies[slot].first != color) ++slot;
-                    if (slot == used) {
-                        frequencies[used] = {color, 0};
-                        ++used;
-                    }
-                    ++frequencies[slot].second;
+            // Sample the rightmost tile-width while scrolling. Each entry shows
+            // the nametable tile and pattern pixel selected by the scanline renderer.
+            std::cout << "Scroll-edge tile samples (x=248..255):\\n";
+            constexpr std::array<int, 5> diagnosticRows{0, 60, 120, 180, 239};
+            for (const int y : diagnosticRows) {
+                std::cout << " y=" << y;
+                const auto first = bus.ppuBackgroundInfoDebug(248, y);
+                std::cout << " v=$" << std::hex << first.scrollAddress
+                          << " fineX=" << static_cast<int>(first.fineX);
+                for (int x = 248; x < 256; ++x) {
+                    const auto info = bus.ppuBackgroundInfoDebug(x, y);
+                    std::cout << " [" << std::dec << x << ":t" << std::hex
+                              << static_cast<int>(info.tile)
+                              << "/p" << static_cast<int>(info.pixel)
+                              << "/a" << static_cast<int>(info.palette)
+                              << "/tx" << static_cast<int>(info.tileX)
+                              << "/fx" << static_cast<int>(info.finePixelX) << "]";
                 }
-                std::sort(frequencies.begin(), frequencies.begin() + used,
-                    [](const auto& a, const auto& b) {
-                        return a.second > b.second;
-                    });
-                std::cout << " x" << x << "=[";
-                for (int i = 0; i < std::min(3, used); ++i) {
-                    if (i) std::cout << ",";
-                    std::cout << "$" << std::hex << frequencies[i].first
-                              << std::dec << ":" << frequencies[i].second;
-                }
-                std::cout << "]";
+                std::cout << std::dec << '\\n';
             }
-            std::cout << '\n';
             std::cout << "CPU trace (oldest->newest):";
             for (std::size_t i = 0; i < 16; ++i) {
                 std::cout << " $" << std::hex << cpu.debugTraceAddress(i)
