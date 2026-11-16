@@ -30,7 +30,10 @@ bool Cartridge::irqPending() const {
 void Cartridge::clockCpuCycle() {
     if (mapper == 40 && mapper40IrqEnabled) {
         ++mapper40IrqCounter;
-        if (mapper40IrqCounter >= 4096) mapper40IrqEnabled = false;
+        if (mapper40IrqCounter >= 4096) {
+            mapper40IrqEnabled = false;
+            mapper40IrqPending = true;
+        }
     }
 }
 
@@ -92,6 +95,7 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
         if (address >= 0x8000 && address < 0xA000) {
             mapper40IrqEnabled = false;
             mapper40IrqCounter = 0;
+            mapper40IrqPending = false;
         } else if (address >= 0xA000 && address < 0xC000) {
             if (!mapper40IrqEnabled) {
                 mapper40IrqCounter = 0;
