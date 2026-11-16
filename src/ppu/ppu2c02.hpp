@@ -70,9 +70,12 @@ private:
     std::uint8_t lastStatusRead = 0;
     std::array<std::uint16_t, 240> lineScrollAddress{};
     std::array<std::uint8_t, 240> lineFineX{};
+    std::array<std::uint8_t, 240> lineMask{};
+    std::array<std::uint32_t, 256 * 240> framePixels{};
     std::array<std::array<std::uint8_t, 256>, 240> lineOam{};
     std::array<std::uint8_t, 240> lineSpriteControl{};
 
+    void renderScanline(int y);
     void incrementScrollX();
     void incrementScrollY();
     std::uint8_t backgroundPixelAt(int x, int y, std::uint8_t* paletteSlot = nullptr) const;
