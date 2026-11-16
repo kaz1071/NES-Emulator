@@ -3,6 +3,19 @@
 #include <algorithm>
 #include <cstddef>
 
+namespace {
+static constexpr std::array<std::uint32_t, 64> colors = {
+    0xFF666666,0xFF002A88,0xFF1412A7,0xFF3B00A4,0xFF5C007E,0xFF6E0040,0xFF6C0600,0xFF561D00,
+    0xFF333500,0xFF0B4800,0xFF005200,0xFF004F08,0xFF00404D,0xFF000000,0xFF000000,0xFF000000,
+    0xFFADADAD,0xFF155FD9,0xFF4240FF,0xFF7527FE,0xFFA01ACC,0xFFB71E7B,0xFFB53120,0xFF994E00,
+    0xFF6B6D00,0xFF388700,0xFF0C9300,0xFF008F32,0xFF007C8D,0xFF000000,0xFF000000,0xFF000000,
+    0xFFFFFEFF,0xFF64B0FF,0xFF9290FF,0xFFC676FF,0xFFF36AFF,0xFFFE6ECC,0xFFFE8170,0xFFEA9E22,
+    0xFFBCBE00,0xFF88D800,0xFF5CE430,0xFF45E082,0xFF48CDDE,0xFF4F4F4F,0xFF000000,0xFF000000,
+    0xFFFFFEFF,0xFFC0DFFF,0xFFD3D2FF,0xFFE8C8FF,0xFFFBC2FF,0xFFFEC4EA,0xFFFECCC5,0xFFF7D8A5,
+    0xFFE4E594,0xFFCFEF96,0xFFBDF4AB,0xFFB3F3CC,0xFFB5EBF2,0xFFB8B8B8,0xFF000000,0xFF000000
+};
+}
+
 void PPU2C02::connectCartridge(Cartridge* loadedCartridge) {
     cartridge = loadedCartridge;
 }
@@ -24,6 +37,8 @@ void PPU2C02::reset() {
     lastStatusRead = 0;
     lineScrollAddress.fill(0);
     lineFineX.fill(0);
+    lineMask.fill(0);
+    framePixels.fill(0xFF000000);
     for (auto& line : lineOam) line.fill(0);
     lineSpriteControl.fill(0);
 }
@@ -50,7 +65,7 @@ std::uint8_t PPU2C02::backgroundPixelAt(
     const std::uint8_t tile = ppuRead(static_cast<std::uint16_t>(
         tableBase + tileY * 32 + tileX));
     const std::uint16_t pattern = static_cast<std::uint16_t>(
-        ((control & 0x10) ? 0x1000 : 0) + tile * 16 + fineY);
+        ((lineSpriteControl[static_cast<std::size_t>(y)] & 0x10) ? 0x1000 : 0) + tile * 16 + fineY);
     const int bit = 7 - finePixelX;
     const std::uint8_t low = ppuRead(pattern);
     const std::uint8_t high = ppuRead(static_cast<std::uint16_t>(pattern + 8));
@@ -165,10 +180,12 @@ void PPU2C02::clock() {
         const auto line = static_cast<std::size_t>(scanline);
         lineScrollAddress[line] = vramAddress;
         lineFineX[line] = fineX;
+        lineMask[line] = mask;
         // Keep the sprite state that was active when this scanline began.
         // A single end-of-frame OAM snapshot loses games' mid-frame sprite updates.
         lineOam[line] = oam;
         lineSpriteControl[line] = control;
+        renderScanline(scanline);
     }
     if (rendering && renderLine) {
         // This renderer samples one scroll position per scanline rather
@@ -435,95 +452,86 @@ std::array<std::size_t, 32> PPU2C02::debugVisiblePaletteSlotCounts() const {
     return counts;
 }
 
-void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
-    static constexpr std::array<std::uint32_t, 64> colors = {
-        0xFF666666,0xFF002A88,0xFF1412A7,0xFF3B00A4,0xFF5C007E,0xFF6E0040,0xFF6C0600,0xFF561D00,
-        0xFF333500,0xFF0B4800,0xFF005200,0xFF004F08,0xFF00404D,0xFF000000,0xFF000000,0xFF000000,
-        0xFFADADAD,0xFF155FD9,0xFF4240FF,0xFF7527FE,0xFFA01ACC,0xFFB71E7B,0xFFB53120,0xFF994E00,
-        0xFF6B6D00,0xFF388700,0xFF0C9300,0xFF008F32,0xFF007C8D,0xFF000000,0xFF000000,0xFF000000,
-        0xFFFFFEFF,0xFF64B0FF,0xFF9290FF,0xFFC676FF,0xFFF36AFF,0xFFFE6ECC,0xFFFE8170,0xFFEA9E22,
-        0xFFBCBE00,0xFF88D800,0xFF5CE430,0xFF45E082,0xFF48CDDE,0xFF4F4F4F,0xFF000000,0xFF000000,
-        0xFFFFFEFF,0xFFC0DFFF,0xFFD3D2FF,0xFFE8C8FF,0xFFFBC2FF,0xFFFEC4EA,0xFFFECCC5,0xFFF7D8A5,
-        0xFFE4E594,0xFFCFEF96,0xFFBDF4AB,0xFFB3F3CC,0xFFB5EBF2,0xFFB8B8B8,0xFF000000,0xFF000000
-    };
-    const std::uint32_t backdropColor = colors[ppuRead(0x3F00) & 0x3F];
-    if ((mask & 0x08) == 0) {
-        pixels.fill(0xFF000000);
+void PPU2C02::renderScanline(int y) {
+    if (y < 0 || y >= 240) return;
+    const std::size_t row = static_cast<std::size_t>(y) * 256;
+    const std::uint8_t lineRenderingMask = lineMask[static_cast<std::size_t>(y)];
+    const std::uint32_t backdrop = colors[ppuRead(0x3F00) & 0x3F];
+    if ((lineRenderingMask & 0x08) == 0) {
+        std::fill_n(framePixels.begin() + static_cast<std::ptrdiff_t>(row),
+                    256, 0xFF000000);
         return;
     }
-    std::array<std::uint8_t, 256 * 240> backgroundOpaque{};
-    for (int y = 0; y < 240; ++y) {
-        for (int x = 0; x < 256; ++x) {
-            std::uint32_t output = backdropColor;
-            if (x >= 8 || (mask & 0x02)) {
-                std::uint8_t paletteSlot = 0;
-                const std::uint8_t pixel = backgroundPixelAt(x, y, &paletteSlot);
-                if (pixel != 0) {
-                    output = colors[ppuRead(static_cast<std::uint16_t>(
-                        0x3F00 + paletteSlot)) & 0x3F];
-                    backgroundOpaque[static_cast<std::size_t>(y) * 256 + x] = 1;
-                }
+
+    std::array<std::uint8_t, 256> backgroundOpaque{};
+    for (int x = 0; x < 256; ++x) {
+        std::uint32_t output = backdrop;
+        if (x >= 8 || (lineRenderingMask & 0x02)) {
+            std::uint8_t paletteSlot = 0;
+            const std::uint8_t pixel = backgroundPixelAt(x, y, &paletteSlot);
+            if (pixel != 0) {
+                output = colors[ppuRead(static_cast<std::uint16_t>(
+                    0x3F00 + paletteSlot)) & 0x3F];
+                backgroundOpaque[static_cast<std::size_t>(x)] = 1;
             }
-            pixels[static_cast<std::size_t>(y) * 256 + x] = output;
         }
+        framePixels[row + static_cast<std::size_t>(x)] = output;
     }
-    if ((mask & 0x10) == 0) return;
+    if ((lineRenderingMask & 0x10) == 0) return;
 
-    // Render sprites from the OAM/control snapshot for each scanline.
-    // This preserves mid-frame sprite DMA or PPUCTRL changes instead of
-    // applying the final state of the frame to all 240 lines.
-    for (int y = 0; y < 240; ++y) {
-        const auto& scanlineOam = lineOam[static_cast<std::size_t>(y)];
-        const std::uint8_t scanlineControl = lineSpriteControl[static_cast<std::size_t>(y)];
-        const bool tall = (scanlineControl & 0x20) != 0;
-        const int height = tall ? 16 : 8;
-        std::array<int, 8> selected{};
-        int selectedCount = 0;
+    const auto& scanlineOam = lineOam[static_cast<std::size_t>(y)];
+    const std::uint8_t scanlineControl = lineSpriteControl[static_cast<std::size_t>(y)];
+    const bool tall = (scanlineControl & 0x20) != 0;
+    const int height = tall ? 16 : 8;
+    std::array<int, 8> selected{};
+    int selectedCount = 0;
+    for (int s = 0; s < 64 && selectedCount < 8; ++s) {
+        const int sy = static_cast<int>(scanlineOam[s * 4]) + 1;
+        if (y >= sy && y < sy + height) selected[selectedCount++] = s;
+    }
 
-        // The NES selects the first eight OAM entries that overlap this line.
-        for (int s = 0; s < 64 && selectedCount < 8; ++s) {
-            const int sy = static_cast<int>(scanlineOam[s * 4]) + 1;
-            if (y >= sy && y < sy + height) selected[selectedCount++] = s;
+    for (int i = selectedCount - 1; i >= 0; --i) {
+        const int s = selected[i];
+        const std::uint8_t tile = scanlineOam[s * 4 + 1];
+        const std::uint8_t attr = scanlineOam[s * 4 + 2];
+        const int sx = scanlineOam[s * 4 + 3];
+        const int sy = static_cast<int>(scanlineOam[s * 4]) + 1;
+        const int rowInSprite = y - sy;
+        const int sourceY = (attr & 0x80) ? height - 1 - rowInSprite : rowInSprite;
+        std::uint16_t pattern;
+        if (tall) {
+            pattern = static_cast<std::uint16_t>(
+                (tile & 1) * 0x1000 +
+                ((tile & 0xFE) + sourceY / 8) * 16 +
+                (sourceY & 7));
+        } else {
+            pattern = static_cast<std::uint16_t>(
+                ((scanlineControl & 0x08) ? 0x1000 : 0) +
+                tile * 16 + sourceY);
         }
-
-        // Draw lower-priority sprites first so lower OAM indices win overlaps.
-        for (int i = selectedCount - 1; i >= 0; --i) {
-            const int s = selected[i];
-            const std::uint8_t tile = scanlineOam[s * 4 + 1];
-            const std::uint8_t attr = scanlineOam[s * 4 + 2];
-            const int sx = scanlineOam[s * 4 + 3];
-            const int sy = static_cast<int>(scanlineOam[s * 4]) + 1;
-            const int row = y - sy;
-            const int sourceY = (attr & 0x80) ? height - 1 - row : row;
-            std::uint16_t pat;
-            if (tall) {
-                pat = static_cast<std::uint16_t>(
-                    (tile & 1) * 0x1000 +
-                    ((tile & 0xFE) + sourceY / 8) * 16 +
-                    (sourceY & 7));
-            } else {
-                pat = static_cast<std::uint16_t>(
-                    ((scanlineControl & 0x08) ? 0x1000 : 0) +
-                    tile * 16 + sourceY);
-            }
-            const std::uint8_t lo = ppuRead(pat);
-            const std::uint8_t hi = ppuRead(static_cast<std::uint16_t>(pat + 8));
-            for (int col = 0; col < 8; ++col) {
-                const int px = sx + col;
-                if (px < 0 || px >= 256 || (px < 8 && !(mask & 4))) continue;
-                const int sourceX = (attr & 0x40) ? 7 - col : col;
-                const int bit = 7 - sourceX;
-                const std::uint8_t pixel = static_cast<std::uint8_t>(
-                    ((lo >> bit) & 1) | (((hi >> bit) & 1) << 1));
-                if (!pixel) continue;
-                const std::size_t index = static_cast<std::size_t>(y) * 256 + px;
-                if ((attr & 0x20) && backgroundOpaque[index]) continue;
-                pixels[index] = colors[ppuRead(static_cast<std::uint16_t>(
+        const std::uint8_t low = ppuRead(pattern);
+        const std::uint8_t high = ppuRead(static_cast<std::uint16_t>(pattern + 8));
+        for (int col = 0; col < 8; ++col) {
+            const int px = sx + col;
+            if (px < 0 || px >= 256 ||
+                (px < 8 && !(lineRenderingMask & 0x04))) continue;
+            const int sourceX = (attr & 0x40) ? 7 - col : col;
+            const int bit = 7 - sourceX;
+            const std::uint8_t pixel = static_cast<std::uint8_t>(
+                ((low >> bit) & 1) | (((high >> bit) & 1) << 1));
+            if (pixel == 0) continue;
+            if ((attr & 0x20) && backgroundOpaque[static_cast<std::size_t>(px)]) continue;
+            framePixels[row + static_cast<std::size_t>(px)] =
+                colors[ppuRead(static_cast<std::uint16_t>(
                     0x3F10 + (attr & 3) * 4 + pixel)) & 0x3F];
-            }
         }
     }
 }
+
+void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
+    pixels = framePixels;
+}
+
 std::uint8_t PPU2C02::cpuRead(std::uint16_t registerAddress) {
     const std::uint8_t reg = static_cast<std::uint8_t>(registerAddress & 0x07);
     std::uint8_t value = openBus;
