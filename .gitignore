@@ -18,3 +18,6 @@ out/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local game ROMs (keep copyrighted files out of the public repository)
+roms/
