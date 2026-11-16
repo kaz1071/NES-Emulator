@@ -1,6 +1,7 @@
 #include "cartridge.hpp"
 
 #include <cstddef>
+#include <algorithm>
 #include <utility>
 #include <fstream>
 #include <iterator>
@@ -11,6 +12,80 @@ constexpr std::size_t TRAINER_SIZE = 512;
 constexpr std::size_t PRG_BANK_SIZE = 16 * 1024;
 constexpr std::size_t CHR_BANK_SIZE = 8 * 1024;
 constexpr std::size_t GXMROM_PRG_BANK_SIZE = 32 * 1024;
+}
+
+CartridgeState Cartridge::saveState() const {
+    CartridgeState state{};
+    state.mirroring = mirroring;
+    state.mapper = mapper;
+    state.prgBank = prgBank;
+    state.chrBank = chrBank;
+    state.mmc1Shift = mmc1Shift;
+    state.mmc1Control = mmc1Control;
+    state.mmc1ChrBank0 = mmc1ChrBank0;
+    state.mmc1ChrBank1 = mmc1ChrBank1;
+    state.mmc1PrgBank = mmc1PrgBank;
+    state.mmc3BankRegisters = mmc3BankRegisters;
+    state.mmc3BankSelect = mmc3BankSelect;
+    state.mmc3PrgRamEnabled = mmc3PrgRamEnabled;
+    state.mmc3PrgRamWriteProtected = mmc3PrgRamWriteProtected;
+    state.mmc3IrqLatch = mmc3IrqLatch;
+    state.mmc3IrqCounter = mmc3IrqCounter;
+    state.mmc3IrqReload = mmc3IrqReload;
+    state.mmc3IrqEnabled = mmc3IrqEnabled;
+    state.mmc3IrqPending = mmc3IrqPending;
+    state.mapper40PrgBank = mapper40PrgBank;
+    state.mapper40IrqCounter = mapper40IrqCounter;
+    state.mapper40IrqEnabled = mapper40IrqEnabled;
+    state.mapper40IrqPending = mapper40IrqPending;
+    state.usesChrRam = usesChrRam;
+    if (usesChrRam) {
+        const std::size_t count = std::min(chrData.size(), state.chrRam.size());
+        std::copy_n(chrData.begin(), count, state.chrRam.begin());
+    }
+    return state;
+}
+
+bool Cartridge::loadState(const CartridgeState& state) {
+    if (state.mapper != mapper || state.usesChrRam != usesChrRam) return false;
+    mirroring = state.mirroring;
+    prgBank = state.prgBank;
+    chrBank = state.chrBank;
+    mmc1Shift = state.mmc1Shift;
+    mmc1Control = state.mmc1Control;
+    mmc1ChrBank0 = state.mmc1ChrBank0;
+    mmc1ChrBank1 = state.mmc1ChrBank1;
+    mmc1PrgBank = state.mmc1PrgBank;
+    mmc3BankRegisters = state.mmc3BankRegisters;
+    mmc3BankSelect = state.mmc3BankSelect;
+    mmc3PrgRamEnabled = state.mmc3PrgRamEnabled;
+    mmc3PrgRamWriteProtected = state.mmc3PrgRamWriteProtected;
+    mmc3IrqLatch = state.mmc3IrqLatch;
+    mmc3IrqCounter = state.mmc3IrqCounter;
+    mmc3IrqReload = state.mmc3IrqReload;
+    mmc3IrqEnabled = state.mmc3IrqEnabled;
+    mmc3IrqPending = state.mmc3IrqPending;
+    mapper40PrgBank = state.mapper40PrgBank;
+    mapper40IrqCounter = state.mapper40IrqCounter;
+    mapper40IrqEnabled = state.mapper40IrqEnabled;
+    mapper40IrqPending = state.mapper40IrqPending;
+    if (usesChrRam) {
+        const std::size_t count = std::min(chrData.size(), state.chrRam.size());
+        std::copy_n(state.chrRam.begin(), count, chrData.begin());
+    }
+    return true;
+}
+
+std::uint64_t Cartridge::romFingerprint() const {
+    std::uint64_t hash = 1469598103934665603ULL;
+    const auto add = [&hash](std::uint8_t byte) {
+        hash ^= byte;
+        hash *= 1099511628211ULL;
+    };
+    add(mapper);
+    for (const auto byte : prgRom) add(byte);
+    if (!usesChrRam) for (const auto byte : chrData) add(byte);
+    return hash;
 }
 
 bool Cartridge::prgRamEnabled() const {
