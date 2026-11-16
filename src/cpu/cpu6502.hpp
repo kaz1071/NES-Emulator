@@ -36,6 +36,7 @@ private:
     bool isHalted = false;
     int lastStepCycleCount = 0;
     int cpuCyclesInStep = 0;
+    std::uint64_t totalCpuCycles = 0;
     bool clockBusAccesses = false;
     std::string lastError;
     std::array<std::uint16_t, 16> traceAddresses{};
