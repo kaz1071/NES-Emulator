@@ -21,6 +21,28 @@ struct PPUBackgroundDebugInfo {
 
 class PPU2C02 {
 public:
+    struct State {
+        std::array<std::uint8_t, 4096> nametableRam{};
+        std::array<std::uint8_t, 32> paletteRam{};
+        std::array<std::uint8_t, 256> oam{};
+        std::uint8_t control = 0, mask = 0, status = 0;
+        std::uint8_t oamAddress = 0, openBus = 0, readBuffer = 0;
+        std::uint16_t vramAddress = 0, temporaryAddress = 0;
+        std::uint8_t fineX = 0, scrollX = 0, scrollY = 0;
+        bool writeSecond = false;
+        int ppuCycle = 0, scanline = 261;
+        bool nmiPending = false;
+        std::uint64_t vblankEvents = 0, vblankStatusReads = 0;
+        std::uint8_t lastStatusRead = 0;
+        std::array<std::uint16_t, 240> lineScrollAddress{};
+        std::array<std::uint8_t, 240> lineFineX{}, lineMask{};
+        std::array<std::uint32_t, 256 * 240> framePixels{};
+        std::array<std::array<std::uint8_t, 256>, 240> lineOam{};
+        std::array<std::uint8_t, 240> lineSpriteControl{};
+    };
+
+    State saveState() const;
+    void loadState(const State& state);
     void connectCartridge(Cartridge* cartridge);
     void reset();
     void clock();
