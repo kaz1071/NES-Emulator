@@ -121,6 +121,7 @@ std::array<unsigned char, 7> glyphFor(char c) {
         case 'S': return {{15,16,16,14,1,1,30}};
         case 'P': return {{30,17,17,30,16,16,16}};
         case 'B': return {{30,17,17,30,17,17,30}};
+        case 'K': return {{17,18,20,24,20,18,17}};
         case 'H': return {{17,17,17,31,17,17,17}};
         case 'V': return {{17,17,17,17,17,10,4}};
         case 'Z': return {{31,1,2,4,8,16,31}};
