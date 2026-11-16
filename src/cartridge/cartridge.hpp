@@ -8,7 +8,9 @@
 enum class Mirroring {
     Horizontal,
     Vertical,
-    FourScreen
+    FourScreen,
+    OneScreenLower,
+    OneScreenUpper
 };
 
 struct Cartridge {
@@ -19,6 +21,14 @@ struct Cartridge {
     std::uint8_t mapper = 0;
     std::uint8_t prgBank = 0;
     std::uint8_t chrBank = 0;
+
+    // MMC1 (mapper 1) serial registers.
+    std::uint8_t mmc1Shift = 0x10;
+    std::uint8_t mmc1Control = 0x0C;
+    std::uint8_t mmc1ChrBank0 = 0;
+    std::uint8_t mmc1ChrBank1 = 0;
+    std::uint8_t mmc1PrgBank = 0;
+    bool prgRamEnabled() const;
 
     std::uint8_t readPrg(std::uint16_t address) const;
     void writePrg(std::uint16_t address, std::uint8_t value);
