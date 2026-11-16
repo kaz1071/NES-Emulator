@@ -14,6 +14,23 @@ enum class Mirroring {
     OneScreenUpper
 };
 
+struct CartridgeState {
+    Mirroring mirroring = Mirroring::Horizontal;
+    std::uint8_t mapper = 0, prgBank = 0, chrBank = 0;
+    std::uint8_t mmc1Shift = 0x10, mmc1Control = 0x0C;
+    std::uint8_t mmc1ChrBank0 = 0, mmc1ChrBank1 = 0, mmc1PrgBank = 0;
+    std::array<std::uint8_t, 8> mmc3BankRegisters{};
+    std::uint8_t mmc3BankSelect = 0;
+    bool mmc3PrgRamEnabled = true, mmc3PrgRamWriteProtected = false;
+    std::uint8_t mmc3IrqLatch = 0, mmc3IrqCounter = 0;
+    bool mmc3IrqReload = false, mmc3IrqEnabled = false, mmc3IrqPending = false;
+    std::uint8_t mapper40PrgBank = 0;
+    std::uint16_t mapper40IrqCounter = 0;
+    bool mapper40IrqEnabled = false, mapper40IrqPending = false;
+    bool usesChrRam = false;
+    std::array<std::uint8_t, 8192> chrRam{};
+};
+
 struct Cartridge {
     std::vector<std::uint8_t> prgRom;
     std::vector<std::uint8_t> chrData;
@@ -39,6 +56,9 @@ struct Cartridge {
     std::uint16_t mapper40IrqCounter = 0;
     bool mapper40IrqEnabled = false;
     bool mapper40IrqPending = false;
+    CartridgeState saveState() const;
+    bool loadState(const CartridgeState& state);
+    std::uint64_t romFingerprint() const;
     bool prgRamEnabled() const;
     bool prgRamWritable() const;
     bool irqPending() const;
