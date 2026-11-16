@@ -41,6 +41,7 @@ public:
     std::array<std::size_t, 64> ppuVisiblePaletteIndexCountsDebug() const { return ppu.debugVisiblePaletteIndexCounts(); }
     std::array<std::size_t, 32> ppuVisiblePaletteSlotCountsDebug() const { return ppu.debugVisiblePaletteSlotCounts(); }
     PPUBackgroundDebugInfo ppuBackgroundInfoDebug(int x, int y) const { return ppu.debugBackgroundInfo(x, y); }
+    const std::array<std::uint8_t, 256>& ppuOamDebug() const { return ppu.debugOam(); }
 private:
     std::array<std::uint8_t, 2048> ram{};
     std::array<std::uint8_t, 8192> prgRam{};
