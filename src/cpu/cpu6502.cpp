@@ -144,7 +144,7 @@ bool CPU6502::step() {
         const std::uint8_t low = read(0xFFFE);
         const std::uint8_t high = read(0xFFFF);
         pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
-        lastStepCycleCount = 7;
+        finishStepCycles(7);
         return true;
     }
 
