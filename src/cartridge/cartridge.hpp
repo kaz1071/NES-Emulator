@@ -35,10 +35,14 @@ struct Cartridge {
     bool mmc3PrgRamWriteProtected = false;
     std::uint8_t mmc3IrqLatch = 0, mmc3IrqCounter = 0;
     bool mmc3IrqReload = false, mmc3IrqEnabled = false, mmc3IrqPending = false;
+    std::uint8_t mapper40PrgBank = 0;
+    std::uint16_t mapper40IrqCounter = 0;
+    bool mapper40IrqEnabled = false;
     bool prgRamEnabled() const;
     bool prgRamWritable() const;
     bool irqPending() const;
     void clockScanline();
+    void clockCpuCycle();
 
     std::uint8_t readPrg(std::uint16_t address) const;
     void writePrg(std::uint16_t address, std::uint8_t value);
