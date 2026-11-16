@@ -143,6 +143,9 @@ void CPU6502::reset() {
     const std::uint8_t low = read(0xFFFC);
     const std::uint8_t high = read(0xFFFD);
     pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
+    // The 6502 reset sequence occupies seven CPU cycles; retain that parity
+    // even though reset-time bus dummy cycles are not yet emulated.
+    totalCpuCycles = 7;
 }
 
 bool CPU6502::step() {
