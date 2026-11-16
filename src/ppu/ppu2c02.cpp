@@ -186,6 +186,10 @@ void PPU2C02::clock() {
         lineOam[line] = oam;
         lineSpriteControl[line] = control;
         renderScanline(scanline);
+        // The current renderer is scanline-based, so clock MMC3's IRQ counter
+        // once at the start of each rendered scanline as an approximation
+        // of the PPU A12 fetch edge.
+        if (rendering && cartridge != nullptr) cartridge->clockScanline();
     }
     if (rendering && renderLine) {
         // This renderer samples one scroll position per scanline rather
