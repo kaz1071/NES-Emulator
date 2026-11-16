@@ -67,7 +67,13 @@ The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapp
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
-## Version 0.21.0\n\n- Added a local PRELOADED ROMS menu that scans the ignored `roms/` directory in a fixed game order.\n- Added initial Mapper 40 support for The Lost Levels ROM supplied for testing.\n- ROM files are deliberately not committed to the public repository.\n\n## Version 0.18.0
+## Version 0.21.0
+
+- Added a local PRELOADED ROMS menu that scans the ignored `roms/` directory in a fixed game order.
+- Added initial Mapper 40 support for The Lost Levels ROM supplied for testing.
+- ROM files are deliberately not committed to the public repository.
+
+## Version 0.18.0
 
 - Added large, vertically stacked LOAD ROM and QUIT buttons centered in the window.
 - Added on-screen success and error messages when selecting a ROM.
