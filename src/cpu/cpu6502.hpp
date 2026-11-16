@@ -7,6 +7,15 @@
 
 class CPU6502 {
 public:
+    struct State {
+        std::uint8_t a = 0, x = 0, y = 0, sp = 0xFD, status = 0x24;
+        std::uint16_t pc = 0;
+        bool halted = false;
+        int lastStepCycleCount = 0;
+        std::uint64_t totalCpuCycles = 0;
+    };
+    State saveState() const;
+    void loadState(const State& state);
     void connectBus(NESBus* bus);
     void reset();
     bool step();
