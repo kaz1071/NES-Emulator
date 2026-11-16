@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
         std::cout << "CPU reset complete. 6502 reset vector: $" << std::hex
                   << cpu.pc << std::dec << '\n';
     } else {
-        std::cout << "No ROM loaded. Click LOAD ROM to choose an iNES NROM file.\n";
+        std::cout << "No ROM loaded. Choose LOAD ROM or PRELOADED ROMS to start a game.\n";
     }
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
@@ -355,7 +355,7 @@ int main(int argc, char** argv) {
                         if (SDL_SetWindowFullscreen(window, mode) == 0)
                             fullscreen = !fullscreen;
                         else
-                            std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\\n';
+                            std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\n';
                     } else if (contains(buttons[1], event.button.x, event.button.y)) {
                         preloadedRoms = findPreloadedRoms();
                         showPreloadedMenu = true;
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
                     std::string error;
                     const std::filesystem::path path(selectedRom);
                     if (!loadCartridge(path, nextCartridge, error)) {
-                        std::cerr << "ROM loading failed: " << error << '\\n';
+                        std::cerr << "ROM loading failed: " << error << '\n';
                         SDL_SetWindowTitle(window, "NES Emulator - ROM load failed");
                         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
                             "ROM could not be loaded", error.c_str(), window);
@@ -386,8 +386,8 @@ int main(int argc, char** argv) {
                         SDL_SetWindowTitle(window, windowTitle.c_str());
                         printCartridgeInfo(cartridge, path);
                         std::cout << "CPU reset complete. 6502 reset vector: $" << std::hex
-                                  << cpu.pc << std::dec << '\\n'
-                                  << "Experimental CPU execution active (official 6502 opcodes supported; instruction-cycle timing enabled, not cycle-perfect).\\n";
+                                  << cpu.pc << std::dec << '\n'
+                                  << "Experimental CPU execution active (official 6502 opcodes supported; instruction-cycle timing enabled, not cycle-perfect).\n";
                         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
                             "ROM loaded", "The ROM file was loaded. Game compatibility is still experimental, so the screen may remain black if the game uses unsupported CPU instructions or PPU features.", window);
                     }
