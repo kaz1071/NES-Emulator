@@ -38,6 +38,7 @@ struct Cartridge {
     std::uint8_t mapper40PrgBank = 0;
     std::uint16_t mapper40IrqCounter = 0;
     bool mapper40IrqEnabled = false;
+    bool mapper40IrqPending = false;
     bool prgRamEnabled() const;
     bool prgRamWritable() const;
     bool irqPending() const;
