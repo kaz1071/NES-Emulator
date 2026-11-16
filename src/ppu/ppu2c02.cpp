@@ -22,6 +22,49 @@ void PPU2C02::reset() {
     vblankEvents = 0;
     vblankStatusReads = 0;
     lastStatusRead = 0;
+    lineScrollAddress.fill(0);
+    lineFineX.fill(0);
+}
+
+std::uint8_t PPU2C02::backgroundPixelAt(
+    int x, int y, std::uint8_t* paletteSlot) const {
+    if (paletteSlot != nullptr) *paletteSlot = 0;
+    if (x < 0 || x >= 256 || y < 0 || y >= 240) return 0;
+
+    const std::uint16_t scroll = lineScrollAddress[static_cast<std::size_t>(y)];
+    const int coarseX = scroll & 0x001F;
+    const int coarseY = (scroll >> 5) & 0x001F;
+    const int baseTableX = (scroll >> 10) & 1;
+    const int tableY = (scroll >> 11) & 1;
+    const int fineY = (scroll >> 12) & 7;
+    const int pixelX = static_cast<int>(lineFineX[static_cast<std::size_t>(y)]) + x;
+    const int tileOffsetX = coarseX + pixelX / 8;
+    const int tableX = (baseTableX + tileOffsetX / 32) & 1;
+    const int tileX = tileOffsetX & 31;
+    const int tileY = coarseY;
+    const int finePixelX = pixelX & 7;
+    const std::uint16_t tableBase = static_cast<std::uint16_t>(
+        0x2000 + (tableY * 2 + tableX) * 0x400);
+    const std::uint8_t tile = ppuRead(static_cast<std::uint16_t>(
+        tableBase + tileY * 32 + tileX));
+    const std::uint16_t pattern = static_cast<std::uint16_t>(
+        ((control & 0x10) ? 0x1000 : 0) + tile * 16 + fineY);
+    const int bit = 7 - finePixelX;
+    const std::uint8_t low = ppuRead(pattern);
+    const std::uint8_t high = ppuRead(static_cast<std::uint16_t>(pattern + 8));
+    const std::uint8_t pixel = static_cast<std::uint8_t>(
+        ((low >> bit) & 1) | (((high >> bit) & 1) << 1));
+    if (pixel == 0) return 0;
+
+    const std::uint16_t attributeAddress = static_cast<std::uint16_t>(
+        tableBase + 0x3C0 + (tileY / 4) * 8 + tileX / 4);
+    const std::uint8_t attribute = ppuRead(attributeAddress);
+    const int shift = ((tileY & 2) ? 4 : 0) + ((tileX & 2) ? 2 : 0);
+    const std::uint8_t palette = static_cast<std::uint8_t>((attribute >> shift) & 3);
+    if (paletteSlot != nullptr) {
+        *paletteSlot = static_cast<std::uint8_t>(palette * 4 + pixel);
+    }
+    return pixel;
 }
 
 void PPU2C02::updateSpriteZeroHit() {
@@ -42,30 +85,8 @@ void PPU2C02::updateSpriteZeroHit() {
     if (x < spriteX || x >= spriteX + 8 ||
         y < spriteY || y >= spriteY + spriteHeight) return;
 
-    // Resolve the background pixel using the current scroll and nametable.
-    const int worldX = (x + scrollX) % 512;
-    const int worldY = (y + scrollY) % 480;
-    const int tableX = ((control & 1) + worldX / 256) & 1;
-    const int tableY = (((control >> 1) & 1) + worldY / 240) & 1;
-    const int localX = worldX % 256;
-    const int localY = worldY % 240;
-    const std::uint16_t tableBase = static_cast<std::uint16_t>(
-        0x2000 + (tableY * 2 + tableX) * 0x400);
-    const int tileX = localX / 8;
-    const int tileY = localY / 8;
-    const std::uint8_t backgroundTile = ppuRead(static_cast<std::uint16_t>(
-        tableBase + tileY * 32 + tileX));
-    const std::uint16_t backgroundPattern = static_cast<std::uint16_t>(
-        ((control & 0x10) ? 0x1000 : 0) +
-        backgroundTile * 16 + (localY & 7));
-    const int backgroundBit = 7 - (localX & 7);
-    const std::uint8_t backgroundLow = ppuRead(backgroundPattern);
-    const std::uint8_t backgroundHigh = ppuRead(
-        static_cast<std::uint16_t>(backgroundPattern + 8));
-    const std::uint8_t backgroundPixel = static_cast<std::uint8_t>(
-        ((backgroundLow >> backgroundBit) & 1) |
-        (((backgroundHigh >> backgroundBit) & 1) << 1));
-    if (backgroundPixel == 0) return;
+    // Use this scanline's captured Loopy scroll state for the background.
+    if (backgroundPixelAt(x, y) == 0) return;
 
     // Decode sprite 0, including horizontal/vertical flip and 8x16 mode.
     const std::uint8_t tile = oam[1];
@@ -94,8 +115,37 @@ void PPU2C02::updateSpriteZeroHit() {
     if (spritePixel != 0) status |= 0x40;
 }
 
+void PPU2C02::incrementScrollX() {
+    if ((vramAddress & 0x001F) == 31) {
+        vramAddress &= static_cast<std::uint16_t>(~0x001F);
+        vramAddress ^= 0x0400;
+    } else {
+        ++vramAddress;
+    }
+}
+
+void PPU2C02::incrementScrollY() {
+    if ((vramAddress & 0x7000) != 0x7000) {
+        vramAddress += 0x1000;
+        return;
+    }
+
+    vramAddress &= static_cast<std::uint16_t>(~0x7000);
+    int coarseY = (vramAddress & 0x03E0) >> 5;
+    if (coarseY == 29) {
+        coarseY = 0;
+        vramAddress ^= 0x0800;
+    } else if (coarseY == 31) {
+        coarseY = 0;
+    } else {
+        ++coarseY;
+    }
+    vramAddress = static_cast<std::uint16_t>(
+        (vramAddress & ~0x03E0) | (coarseY << 5));
+}
+
 void PPU2C02::clock() {
-    // Approximate NTSC PPU timing: 341 dots across 262 scanlines.
+    // NTSC PPU timing: 341 dots across 262 scanlines.
     if (scanline == 241 && ppuCycle == 1) {
         status |= 0x80; // VBlank begins
         ++vblankEvents;
@@ -103,6 +153,29 @@ void PPU2C02::clock() {
     }
     if (scanline == 261 && ppuCycle == 1) {
         status &= 0x1F; // Clear VBlank, sprite-zero hit, and overflow
+    }
+
+    const bool rendering = (mask & 0x18) != 0;
+    const bool renderLine = (scanline >= 0 && scanline < 240) || scanline == 261;
+    if (rendering && renderLine) {
+        if (scanline >= 0 && scanline < 240 && ppuCycle == 1) {
+            lineScrollAddress[static_cast<std::size_t>(scanline)] = vramAddress;
+            lineFineX[static_cast<std::size_t>(scanline)] = fineX;
+        }
+
+        if ((ppuCycle >= 1 && ppuCycle <= 256) ||
+            (ppuCycle >= 321 && ppuCycle <= 336)) {
+            if ((ppuCycle & 0x07) == 0) incrementScrollX();
+        }
+        if (ppuCycle == 256) incrementScrollY();
+        if (ppuCycle == 257) {
+            vramAddress = static_cast<std::uint16_t>(
+                (vramAddress & ~0x041F) | (temporaryAddress & 0x041F));
+        }
+        if (scanline == 261 && ppuCycle >= 280 && ppuCycle <= 304) {
+            vramAddress = static_cast<std::uint16_t>(
+                (vramAddress & ~0x7BE0) | (temporaryAddress & 0x7BE0));
+        }
     }
 
     updateSpriteZeroHit();
@@ -366,32 +439,20 @@ void PPU2C02::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
         return;
     }
     std::array<std::uint8_t, 256 * 240> backgroundOpaque{};
-    const int baseTableX = control & 1, baseTableY = (control >> 1) & 1;
-    const int patternBase = (control & 0x10) ? 0x1000 : 0;
-    for (int y = 0; y < 240; ++y) for (int x = 0; x < 256; ++x) {
-        std::uint32_t output = backdropColor;
-        if (x >= 8 || (mask & 0x02)) {
-            const int worldX = (x + scrollX) % 512, worldY = (y + scrollY) % 480;
-            const int tableX = (baseTableX + worldX / 256) & 1;
-            const int tableY = (baseTableY + worldY / 240) & 1;
-            const int localX = worldX % 256, localY = worldY % 240;
-            const std::uint16_t tableBase = static_cast<std::uint16_t>(0x2000 + (tableY * 2 + tableX) * 0x400);
-            const int tileX = localX / 8, tileY = localY / 8;
-            const std::uint8_t tile = ppuRead(static_cast<std::uint16_t>(tableBase + tileY * 32 + tileX));
-            const std::uint16_t pat = static_cast<std::uint16_t>(patternBase + tile * 16 + (localY & 7));
-            const std::uint8_t lo = ppuRead(pat), hi = ppuRead(static_cast<std::uint16_t>(pat + 8));
-            const int bit = 7 - (localX & 7);
-            const std::uint8_t pixel = static_cast<std::uint8_t>(((lo >> bit) & 1) | (((hi >> bit) & 1) << 1));
-            if (pixel) {
-                const std::uint16_t attrAddr = static_cast<std::uint16_t>(tableBase + 0x3C0 + (tileY / 4) * 8 + tileX / 4);
-                const std::uint8_t attr = ppuRead(attrAddr);
-                const int shift = ((tileY & 2) ? 4 : 0) + ((tileX & 2) ? 2 : 0);
-                const std::uint8_t pal = static_cast<std::uint8_t>((attr >> shift) & 3);
-                output = colors[ppuRead(static_cast<std::uint16_t>(0x3F00 + pal * 4 + pixel)) & 0x3F];
-                backgroundOpaque[static_cast<std::size_t>(y) * 256 + x] = 1;
+    for (int y = 0; y < 240; ++y) {
+        for (int x = 0; x < 256; ++x) {
+            std::uint32_t output = backdropColor;
+            if (x >= 8 || (mask & 0x02)) {
+                std::uint8_t paletteSlot = 0;
+                const std::uint8_t pixel = backgroundPixelAt(x, y, &paletteSlot);
+                if (pixel != 0) {
+                    output = colors[ppuRead(static_cast<std::uint16_t>(
+                        0x3F00 + paletteSlot)) & 0x3F];
+                    backgroundOpaque[static_cast<std::size_t>(y) * 256 + x] = 1;
+                }
             }
+            pixels[static_cast<std::size_t>(y) * 256 + x] = output;
         }
-        pixels[static_cast<std::size_t>(y) * 256 + x] = output;
     }
     if ((mask & 0x10) == 0) return;
     const bool tall = (control & 0x20) != 0;
