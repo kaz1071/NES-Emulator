@@ -78,15 +78,16 @@ constexpr int BUTTON_WIDTH = 460;
 constexpr int BUTTON_HEIGHT = 64;
 constexpr int BUTTON_GAP = 12;
 
-std::array<SDL_Rect, 4> menuButtons(int width, int height) {
+std::array<SDL_Rect, 5> menuButtons(int width, int height) {
     const int x = (width - BUTTON_WIDTH) / 2;
-    const int totalHeight = 4 * BUTTON_HEIGHT + 3 * BUTTON_GAP;
+    const int totalHeight = 5 * BUTTON_HEIGHT + 4 * BUTTON_GAP;
     const int firstY = (height - totalHeight) / 2;
     return {{
         {x, firstY, BUTTON_WIDTH, BUTTON_HEIGHT},
         {x, firstY + BUTTON_HEIGHT + BUTTON_GAP, BUTTON_WIDTH, BUTTON_HEIGHT},
         {x, firstY + 2 * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT},
-        {x, firstY + 3 * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT}
+        {x, firstY + 3 * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT},
+        {x, firstY + 4 * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT}
     }};
 }
 
@@ -124,6 +125,10 @@ std::array<unsigned char, 7> glyphFor(char c) {
         case 'K': return {{17,18,20,24,20,18,17}};
         case 'H': return {{17,17,17,31,17,17,17}};
         case 'V': return {{17,17,17,17,17,10,4}};
+        case 'W': return {{17,17,17,21,21,21,10}};
+        case '2': return {{14,17,1,2,4,8,31}};
+        case '3': return {{30,1,1,14,1,1,30}};
+        case '+': return {{0,4,4,31,4,4,0}};
         case 'Z': return {{31,1,2,4,8,16,31}};
         default: return {{0,0,0,0,0,0,0}};
     }
@@ -164,8 +169,9 @@ void drawMenuButtons(SDL_Renderer* renderer, int width, int height) {
     const auto buttons = menuButtons(width, height);
     drawMenuButton(renderer, buttons[0], "LOAD ROM");
     drawMenuButton(renderer, buttons[1], "PRELOADED ROMS");
-    drawMenuButton(renderer, buttons[2], "FULLSCREEN");
-    drawMenuButton(renderer, buttons[3], "QUIT");
+    drawMenuButton(renderer, buttons[2], "DOWNLOAD ROMS");
+    drawMenuButton(renderer, buttons[3], "FULLSCREEN");
+    drawMenuButton(renderer, buttons[4], "QUIT");
 }
 
 using PreloadedRom = std::pair<std::string, std::filesystem::path>;
@@ -215,6 +221,58 @@ void drawPreloadedMenu(SDL_Renderer* renderer, int width, int height,
             drawMenuButton(renderer, buttons[i], roms[i].first);
     }
     drawMenuButton(renderer, buttons.back(), "BACK");
+}
+
+using DownloadRom = std::pair<std::string, std::string>;
+
+const std::vector<DownloadRom>& downloadRomLinks() {
+    static const std::vector<DownloadRom> links{
+        {"MARIO BROS 3", "https://www.romsgames.net/nintendo-rom-super-mario-bros-3/"},
+        {"ZELDA", "https://www.romsgames.net/nintendo-rom-legend-of-zelda-the/"},
+        {"MARIO BROS 2", "https://www.romsgames.net/nintendo-rom-super-mario-bros-2/"},
+        {"DUCK HUNT", "https://www.romsgames.net/nintendo-rom-super-mario-bros-duck-hunt/"},
+        {"LOST LEVELS", "https://www.emu-land.net/en/consoles/dendy/roms/super-mario-bros-2-j"}
+    };
+    return links;
+}
+
+std::vector<SDL_Rect> downloadMenuButtons(int width, int height) {
+    constexpr int buttonWidth = 600, buttonHeight = 56, gap = 10;
+    const std::size_t rows = downloadRomLinks().size() + 1;
+    const int totalHeight = static_cast<int>(rows) * buttonHeight
+                          + static_cast<int>(rows - 1) * gap;
+    const int x = (width - buttonWidth) / 2;
+    const int firstY = (height - totalHeight) / 2;
+    std::vector<SDL_Rect> buttons;
+    buttons.reserve(rows);
+    for (std::size_t i = 0; i < rows; ++i)
+        buttons.push_back({x, firstY + static_cast<int>(i) * (buttonHeight + gap),
+                           buttonWidth, buttonHeight});
+    return buttons;
+}
+
+void drawDownloadMenu(SDL_Renderer* renderer, int width, int height) {
+    const auto buttons = downloadMenuButtons(width, height);
+    const auto& links = downloadRomLinks();
+    for (std::size_t i = 0; i < links.size(); ++i)
+        drawMenuButton(renderer, buttons[i], links[i].first);
+    drawMenuButton(renderer, buttons.back(), "BACK");
+}
+
+void openWebsite(const std::string& url) {
+    const pid_t child = fork();
+    if (child < 0) {
+        std::cerr << "Could not open website: failed to start browser.\\n";
+        return;
+    }
+    if (child == 0) {
+        execlp("xdg-open", "xdg-open", url.c_str(), static_cast<char*>(nullptr));
+        _exit(127);
+    }
+    int status = 0;
+    waitpid(child, &status, 0);
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+        std::cerr << "Could not open website. Make sure xdg-open and a browser are installed.\\n";
 }
 
 void printCartridgeInfo(const Cartridge& c, const std::filesystem::path& path) {
@@ -313,6 +371,7 @@ int main(int argc, char** argv) {
     bool running = true;
     bool fullscreen = false;
     bool showPreloadedMenu = false;
+    bool showDownloadMenu = false;
     std::vector<PreloadedRom> preloadedRoms;
     while (running) {
         SDL_Event event{};
@@ -333,7 +392,20 @@ int main(int argc, char** argv) {
                 SDL_GetWindowSize(window, &windowWidth, &windowHeight);
                 std::string selectedRom;
 
-                if (showPreloadedMenu) {
+                if (showDownloadMenu) {
+                    const auto buttons = downloadMenuButtons(windowWidth, windowHeight);
+                    if (contains(buttons.back(), event.button.x, event.button.y)) {
+                        showDownloadMenu = false;
+                    } else {
+                        const auto& links = downloadRomLinks();
+                        for (std::size_t i = 0; i < links.size(); ++i) {
+                            if (contains(buttons[i], event.button.x, event.button.y)) {
+                                openWebsite(links[i].second);
+                                break;
+                            }
+                        }
+                    }
+                } else if (showPreloadedMenu) {
                     const auto buttons = preloadedMenuButtons(
                         windowWidth, windowHeight, preloadedRoms.size());
                     if (contains(buttons.back(), event.button.x, event.button.y)) {
@@ -348,14 +420,16 @@ int main(int argc, char** argv) {
                     }
                 } else {
                     const auto buttons = menuButtons(windowWidth, windowHeight);
-                    if (contains(buttons[3], event.button.x, event.button.y)) {
+                    if (contains(buttons[4], event.button.x, event.button.y)) {
                         running = false;
-                    } else if (contains(buttons[2], event.button.x, event.button.y)) {
+                    } else if (contains(buttons[3], event.button.x, event.button.y)) {
                         const Uint32 mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
                         if (SDL_SetWindowFullscreen(window, mode) == 0)
                             fullscreen = !fullscreen;
                         else
                             std::cerr << "Fullscreen toggle failed: " << SDL_GetError() << '\n';
+                    } else if (contains(buttons[2], event.button.x, event.button.y)) {
+                        showDownloadMenu = true;
                     } else if (contains(buttons[1], event.button.x, event.button.y)) {
                         preloadedRoms = findPreloadedRoms();
                         showPreloadedMenu = true;
@@ -472,7 +546,9 @@ int main(int argc, char** argv) {
         const SDL_Rect gameArea = gameRectangle(outputWidth, outputHeight);
         SDL_RenderCopy(renderer, screen, nullptr, &gameArea);
         if (!hasCartridge) {
-            if (showPreloadedMenu)
+            if (showDownloadMenu)
+                drawDownloadMenu(renderer, outputWidth, outputHeight);
+            else if (showPreloadedMenu)
                 drawPreloadedMenu(renderer, outputWidth, outputHeight, preloadedRoms);
             else
                 drawMenuButtons(renderer, outputWidth, outputHeight);
