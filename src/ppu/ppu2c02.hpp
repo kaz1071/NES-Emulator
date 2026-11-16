@@ -70,6 +70,8 @@ private:
     std::uint8_t lastStatusRead = 0;
     std::array<std::uint16_t, 240> lineScrollAddress{};
     std::array<std::uint8_t, 240> lineFineX{};
+    std::array<std::array<std::uint8_t, 256>, 240> lineOam{};
+    std::array<std::uint8_t, 240> lineSpriteControl{};
 
     void incrementScrollX();
     void incrementScrollY();
