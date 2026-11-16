@@ -333,11 +333,6 @@ int main(int argc, char** argv) {
                 ++instructionsSinceDiagnostic;
                 const int instructionCycles = cpu.lastStepCycles();
                 cpuCyclesThisFrame += instructionCycles;
-                for (int cycle = 0; cycle < instructionCycles; ++cycle) {
-                    bus.clockPpu();
-                    bus.clockPpu();
-                    bus.clockPpu();
-                }
             }
         }
 
