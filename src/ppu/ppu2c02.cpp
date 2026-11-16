@@ -43,6 +43,44 @@ void PPU2C02::reset() {
     lineSpriteControl.fill(0);
 }
 
+PPUBackgroundDebugInfo PPU2C02::debugBackgroundInfo(int x, int y) const {
+    PPUBackgroundDebugInfo info{};
+    if (x < 0 || x >= 256 || y < 0 || y >= 240) return info;
+
+    const std::size_t line = static_cast<std::size_t>(y);
+    info.scrollAddress = lineScrollAddress[line];
+    info.fineX = lineFineX[line];
+    const int pixelX = static_cast<int>(info.fineX) + x;
+    const int tileOffsetX = (info.scrollAddress & 0x001F) + pixelX / 8;
+    info.tableX = static_cast<std::uint8_t>(
+        (((info.scrollAddress >> 10) & 1) + tileOffsetX / 32) & 1);
+    info.tableY = static_cast<std::uint8_t>((info.scrollAddress >> 11) & 1);
+    info.tileX = static_cast<std::uint8_t>(tileOffsetX & 31);
+    info.tileY = static_cast<std::uint8_t>((info.scrollAddress >> 5) & 31);
+    info.finePixelX = static_cast<std::uint8_t>(pixelX & 7);
+    info.finePixelY = static_cast<std::uint8_t>((info.scrollAddress >> 12) & 7);
+
+    const std::uint16_t tableBase = static_cast<std::uint16_t>(
+        0x2000 + (info.tableY * 2 + info.tableX) * 0x400);
+    info.tile = ppuRead(static_cast<std::uint16_t>(
+        tableBase + info.tileY * 32 + info.tileX));
+    const std::uint16_t pattern = static_cast<std::uint16_t>(
+        ((lineSpriteControl[line] & 0x10) ? 0x1000 : 0) +
+        info.tile * 16 + info.finePixelY);
+    const int bit = 7 - info.finePixelX;
+    const std::uint8_t low = ppuRead(pattern);
+    const std::uint8_t high = ppuRead(static_cast<std::uint16_t>(pattern + 8));
+    info.pixel = static_cast<std::uint8_t>(
+        ((low >> bit) & 1) | (((high >> bit) & 1) << 1));
+
+    const std::uint16_t attributeAddress = static_cast<std::uint16_t>(
+        tableBase + 0x3C0 + (info.tileY / 4) * 8 + info.tileX / 4);
+    const std::uint8_t attribute = ppuRead(attributeAddress);
+    const int shift = ((info.tileY & 2) ? 4 : 0) + ((info.tileX & 2) ? 2 : 0);
+    info.palette = static_cast<std::uint8_t>((attribute >> shift) & 3);
+    return info;
+}
+
 std::uint8_t PPU2C02::backgroundPixelAt(
     int x, int y, std::uint8_t* paletteSlot) const {
     if (paletteSlot != nullptr) *paletteSlot = 0;
