@@ -12,6 +12,8 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] Linux desktop file picker
 - [x] Local preloaded-ROM menu (ROM files stay outside GitHub)
 - [x] Download menu that opens user-provided game pages in the desktop browser
+- [x] Binary save states for CPU, RAM, PPU, controller, and mapper state
+- [x] Short rolling rewind history with a hold-to-rewind keyboard control
 - [x] Standard iNES header parsing
 - [x] NROM (mapper 0) PRG-ROM loading
 - [x] MMC1 (mapper 1) serial registers, PRG/CHR banking, and mirroring
@@ -56,7 +58,7 @@ Start the emulator:
 ./build/nes-emulator
 ```
 
-Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one of the linked game pages in your web browser, or place the five supported local game files in the `roms/` folder and choose **PRELOADED ROMS**. The preloaded list is ordered as Zelda, Super Mario Bros. + Duck Hunt, Super Mario Bros. 2, The Lost Levels, and Super Mario Bros. 3. The `roms/` folder is ignored by Git, so ROM files are not uploaded to the public repository. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
+Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one of the linked game pages in your web browser, or place the five supported local game files in the `roms/` folder and choose **PRELOADED ROMS**. While a game is running, press **F5** to choose a file and save a `.savestate`, press **F8** to load a save-state for the currently loaded ROM, or hold **R** to rewind. Rewind keeps roughly three seconds of recent gameplay in memory; it is temporary and is not a substitute for a saved state. The preloaded list is ordered as Zelda, Super Mario Bros. + Duck Hunt, Super Mario Bros. 2, The Lost Levels, and Super Mario Bros. 3. The `roms/` folder is ignored by Git, so ROM files are not uploaded to the public repository. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
 
 ```bash
 ./build/nes-emulator /path/to/game.nes
@@ -67,6 +69,12 @@ Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one
 The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls and audio are not implemented, and some mapper board variants are unsupported.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
+
+## Version 0.23.0
+
+- Added portable-within-this-build `.savestate` files that capture CPU registers/cycles, system RAM, PRG-RAM, controller shift state, PPU registers/memory/render state, CHR-RAM, and supported mapper registers/IRQ state.
+- Save states are checked against the loaded ROM fingerprint and mapper before restoring.
+- Added a rolling rewind buffer (about three seconds, sampled every other frame); hold **R** to rewind, **F5** to save a state, and **F8** to load one.
 
 ## Version 0.22.0
 
