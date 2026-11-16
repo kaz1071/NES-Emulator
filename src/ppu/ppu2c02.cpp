@@ -233,6 +233,10 @@ std::uint16_t PPU2C02::mapNametableAddress(std::uint16_t address) const {
         physicalTable = table / 2;
     } else if (cartridge->mirroring == Mirroring::Vertical) {
         physicalTable = table % 2;
+    } else if (cartridge->mirroring == Mirroring::OneScreenLower) {
+        physicalTable = 0;
+    } else if (cartridge->mirroring == Mirroring::OneScreenUpper) {
+        physicalTable = 1;
     }
 
     return static_cast<std::uint16_t>(physicalTable * 0x0400 + offset);
