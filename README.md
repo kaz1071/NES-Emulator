@@ -2,7 +2,7 @@
 
 A custom NES emulator built from scratch in C++ using SDL2, designed for Linux.
 
-The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), MMC3 (mapper 4), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
+The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), MMC3 (mapper 4), NTDEC 2722 (mapper 40), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
 
 ## Current status
 
@@ -10,10 +10,12 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] SDL2 application window
 - [x] Large centered **LOAD ROM** and **QUIT** buttons
 - [x] Linux desktop file picker
+- [x] Local preloaded-ROM menu (ROM files stay outside GitHub)
 - [x] Standard iNES header parsing
 - [x] NROM (mapper 0) PRG-ROM loading
 - [x] MMC1 (mapper 1) serial registers, PRG/CHR banking, and mirroring
 - [x] MMC3 (mapper 4) PRG/CHR banking, mirroring, PRG-RAM protection, and approximate scanline IRQ
+- [x] Mapper 40 fixed/switchable PRG banks and CPU-cycle IRQ
 - [x] GxROM (mapper 66) bank switching for up to 128 KiB PRG-ROM and 32 KiB CHR-ROM
 - [x] CHR-ROM loading and CHR-RAM allocation
 - [x] Trainer offset and mirroring detection
@@ -53,7 +55,7 @@ Start the emulator:
 ./build/nes-emulator
 ```
 
-Click the large centered **LOAD ROM** button and choose a `.nes` file. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
+Click **LOAD ROM** to choose a `.nes` file, or place the five supported local game files in the `roms/` folder and choose **PRELOADED ROMS**. The preloaded list is ordered as Zelda, Super Mario Bros. + Duck Hunt, Super Mario Bros. 2, The Lost Levels, and Super Mario Bros. 3. The `roms/` folder is ignored by Git, so ROM files are not uploaded to the public repository. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
 
 ```bash
 ./build/nes-emulator /path/to/game.nes
@@ -61,11 +63,11 @@ Click the large centered **LOAD ROM** button and choose a `.nes` file. Click **Q
 
 ## Compatibility notes
 
-The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls and audio are not implemented, and some mapper board variants are unsupported.
+The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls and audio are not implemented, and some mapper board variants are unsupported.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
-## Version 0.18.0
+## Version 0.21.0\n\n- Added a local PRELOADED ROMS menu that scans the ignored `roms/` directory in a fixed game order.\n- Added initial Mapper 40 support for The Lost Levels ROM supplied for testing.\n- ROM files are deliberately not committed to the public repository.\n\n## Version 0.18.0
 
 - Added large, vertically stacked LOAD ROM and QUIT buttons centered in the window.
 - Added on-screen success and error messages when selecting a ROM.
