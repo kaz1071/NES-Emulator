@@ -171,6 +171,13 @@ void printCartridgeInfo(const Cartridge& c, const std::filesystem::path& path) {
 }
 
 int main(int argc, char** argv) {
+    bool showDebugOutput = false;
+    std::cout << "Show emulator debug output? [y/N]: " << std::flush;
+    std::string debugChoice;
+    std::getline(std::cin, debugChoice);
+    showDebugOutput = !debugChoice.empty() &&
+        (debugChoice[0] == 'y' || debugChoice[0] == 'Y');
+
     Cartridge cartridge;
     NESBus bus;
     CPU6502 cpu;
@@ -339,7 +346,8 @@ int main(int argc, char** argv) {
         bus.renderFrame(frame);
 
         const Uint32 diagnosticNow = SDL_GetTicks();
-        if (hasCartridge && diagnosticNow - lastCpuDiagnostic >= 2000) {
+        if (showDebugOutput && hasCartridge &&
+            diagnosticNow - lastCpuDiagnostic >= 2000) {
             std::cout << "CPU debug: PC=$" << std::hex << cpu.pc
                       << " next=[" << static_cast<int>(bus.read(cpu.pc)) << " "
                       << static_cast<int>(bus.read(static_cast<std::uint16_t>(cpu.pc + 1))) << " "
