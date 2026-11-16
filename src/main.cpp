@@ -348,139 +348,34 @@ int main(int argc, char** argv) {
         const Uint32 diagnosticNow = SDL_GetTicks();
         if (showDebugOutput && hasCartridge &&
             diagnosticNow - lastCpuDiagnostic >= 2000) {
-            std::cout << "CPU debug: PC=$" << std::hex << cpu.pc
-                      << " next=[" << static_cast<int>(bus.read(cpu.pc)) << " "
-                      << static_cast<int>(bus.read(static_cast<std::uint16_t>(cpu.pc + 1))) << " "
-                      << static_cast<int>(bus.read(static_cast<std::uint16_t>(cpu.pc + 2))) << "]"
+            // Keep optional diagnostics compact so terminal output cannot overwhelm
+            // the desktop/browser. Show CPU state plus visible OAM sprites only.
+            std::cout << "CPU: PC=$" << std::hex << cpu.pc
                       << " A=$" << static_cast<int>(cpu.a)
                       << " X=$" << static_cast<int>(cpu.x)
                       << " Y=$" << static_cast<int>(cpu.y)
-                      << " P=$" << static_cast<int>(cpu.status)
                       << std::dec << " instructions/2s=" << instructionsSinceDiagnostic
-                      << " halted=" << (cpu.halted() ? "yes" : "no")
-                      << " wait-bytes=[" << static_cast<int>(bus.read(0x8505)) << ","
-                      << static_cast<int>(bus.read(0x8506)) << "," << static_cast<int>(bus.read(0x8508)) << "]" << '\n'
-                      << "PPU debug: CTRL=$" << std::hex << static_cast<int>(bus.ppuControlDebug())
+                      << " | PPU: " << bus.ppuScanlineDebug() << ":"
+                      << bus.ppuCycleDebug()
+                      << " CTRL=$" << std::hex << static_cast<int>(bus.ppuControlDebug())
                       << " MASK=$" << static_cast<int>(bus.ppuMaskDebug())
-                      << " STATUS=$" << static_cast<int>(bus.ppuStatusDebug())
-                      << std::dec << " position=" << bus.ppuScanlineDebug() << ":" << bus.ppuCycleDebug()
-                      << " vblank-events=" << bus.ppuVblankEventsDebug()
-                      << " vblank-status-reads=" << bus.ppuVblankStatusReadsDebug()
-                      << " last-status-read=$" << static_cast<int>(bus.ppuLastStatusReadDebug())
-                      << " scroll=[" << static_cast<int>(bus.ppuScrollXDebug())
-                      << "," << static_cast<int>(bus.ppuScrollYDebug()) << "]"
-                      << std::hex
-                      << " universal-palette=$" << static_cast<int>(bus.ppuPaletteDebug())
-                      << std::dec << " nametable-nonzero=" << bus.ppuNametableNonZeroDebug()
-                      << "/4096 nametable-tables=[" << bus.ppuNametableTableNonZeroDebug(0)
-                      << "," << bus.ppuNametableTableNonZeroDebug(1)
-                      << "," << bus.ppuNametableTableNonZeroDebug(2)
-                      << "," << bus.ppuNametableTableNonZeroDebug(3) << "] chr-nonzero=" << bus.ppuChrNonZeroDebug()
-                      << "/8192 selected-pattern-nonzero=" << bus.ppuSelectedPatternNonZeroDebug()
-                      << "/4096 tile36-pixels=" << bus.ppuTileNonZeroPixelsDebug(36, (bus.ppuControlDebug() & 0x10) ? 0x1000 : 0x0000)
-                      << "/64 visible-unique-tiles=" << bus.ppuVisibleUniqueTilesDebug()
-                      << " visible-pattern-pixels=" << bus.ppuVisiblePatternPixelsDebug()
-                      << " pixel-values=[";
-            const auto pixelValueCounts = bus.ppuVisiblePixelValueCountsDebug();
-            for (std::size_t i = 0; i < pixelValueCounts.size(); ++i) {
-                if (i) std::cout << ",";
-                std::cout << pixelValueCounts[i];
-            }
-            std::cout << "] palette-slot-usage=[";
-            const auto paletteSlotCounts = bus.ppuVisiblePaletteSlotCountsDebug();
-            bool firstPaletteSlot = true;
-            for (std::size_t i = 0; i < paletteSlotCounts.size(); ++i) {
-                if (paletteSlotCounts[i] != 0) {
-                    if (!firstPaletteSlot) std::cout << ",";
-                    std::cout << i << ":" << paletteSlotCounts[i];
-                    firstPaletteSlot = false;
-                }
-            }
-            std::cout << "] palette-index-usage=[";
-            const auto paletteIndexCounts = bus.ppuVisiblePaletteIndexCountsDebug();
-            bool firstPaletteIndex = true;
-            for (std::size_t i = 0; i < paletteIndexCounts.size(); ++i) {
-                if (paletteIndexCounts[i] != 0) {
-                    if (!firstPaletteIndex) std::cout << ",";
-                    std::cout << i << ":" << paletteIndexCounts[i];
-                    firstPaletteIndex = false;
-                }
-            }
-            std::cout << "] table1-first16=[";
-            for (std::size_t i = 0; i < 16; ++i) {
-                if (i) std::cout << ",";
-                std::cout << static_cast<int>(bus.ppuNametableByteDebug(1, i));
-            }
-            std::cout << "] table1-attributes=[";
-            for (std::size_t i = 0; i < 64; ++i) {
-                if (i) std::cout << ",";
-                std::cout << static_cast<int>(bus.ppuNametableByteDebug(1, 0x3C0 + i));
-            }
-            std::cout << "] palette=[";
-            for (std::size_t i = 0; i < 32; ++i) {
-                if (i) std::cout << ",";
-                std::cout << static_cast<int>(bus.ppuPaletteByteDebug(i));
-            }
-            std::cout << "] palette-nonzero=" << bus.ppuPaletteNonZeroDebug()
-                      << "/32\n";
-            std::array<std::uint32_t, 64> observedColors{};
-            std::size_t colorCount = 0;
-            std::size_t nonBlackPixels = 0;
-            for (const std::uint32_t pixel : frame) {
-                if ((pixel & 0x00FFFFFF) != 0) ++nonBlackPixels;
-                bool known = false;
-                for (std::size_t i = 0; i < colorCount; ++i) {
-                    if (observedColors[i] == pixel) { known = true; break; }
-                }
-                if (!known && colorCount < observedColors.size())
-                    observedColors[colorCount++] = pixel;
-            }
-            std::cout << "Frame debug: unique-colors=" << colorCount
-                      << " non-black-pixels=" << nonBlackPixels << "/"
-                      << frame.size() << '\n';
-            // Sample the rightmost tile-width while scrolling. Each entry shows
-            // the nametable tile and pattern pixel selected by the scanline renderer.
-            std::cout << "Scroll-edge tile samples (x=248..255):\n";
-            constexpr std::array<int, 5> diagnosticRows{0, 60, 120, 180, 239};
-            for (const int y : diagnosticRows) {
-                std::cout << " y=" << y;
-                const auto first = bus.ppuBackgroundInfoDebug(248, y);
-                std::cout << " v=$" << std::hex << first.scrollAddress
-                          << " fineX=" << static_cast<int>(first.fineX);
-                for (int x = 248; x < 256; ++x) {
-                    const auto info = bus.ppuBackgroundInfoDebug(x, y);
-                    std::cout << " [" << std::dec << x << ":t" << std::hex
-                              << static_cast<int>(info.tile)
-                              << "/p" << static_cast<int>(info.pixel)
-                              << "/a" << static_cast<int>(info.palette)
-                              << "/tx" << static_cast<int>(info.tileX)
-                              << "/fx" << static_cast<int>(info.finePixelX) << "]";
-                }
-                std::cout << std::dec << '\n';
-            }
-            // Dump active OAM entries so sprite tile, position, and priority
-            // can be compared while a Piranha Plant is extended/retracting.
+                      << std::dec << '\\n';
+
             const auto& oam = bus.ppuOamDebug();
-            std::cout << "Sprite OAM (index:y/tile/attr/x; behindBG=attr bit 5):";
+            std::cout << "Visible sprites (index:y/tile/attr/x; B=behind):";
             for (std::size_t s = 0; s < 64; ++s) {
                 const std::uint8_t sy = oam[s * 4];
                 const std::uint8_t tile = oam[s * 4 + 1];
                 const std::uint8_t attr = oam[s * 4 + 2];
                 const std::uint8_t sx = oam[s * 4 + 3];
-                if ((sy == 0 && tile == 0 && attr == 0 && sx == 0) ||
-                    sy == 0xEF || sy == 0xFF) continue;
+                if (sy >= 0xEF ||
+                    (sy == 0 && tile == 0 && attr == 0 && sx == 0)) continue;
                 std::cout << " [" << std::dec << s << ":$" << std::hex
                           << static_cast<int>(sy) << "/$" << static_cast<int>(tile)
                           << "/$" << static_cast<int>(attr) << "/$" << static_cast<int>(sx)
-                          << (attr & 0x20 ? ",behind" : ",front") << "]";
+                          << ((attr & 0x20) ? ",B" : "") << "]";
             }
-            std::cout << std::dec << '\n';
-            std::cout << "CPU trace (oldest->newest):";
-            for (std::size_t i = 0; i < 16; ++i) {
-                std::cout << " $" << std::hex << cpu.debugTraceAddress(i)
-                          << ":" << static_cast<int>(cpu.debugTraceOpcode(i));
-            }
-            std::cout << std::dec << '\n';
+            std::cout << std::dec << '\\n';
             instructionsSinceDiagnostic = 0;
             lastCpuDiagnostic = diagnosticNow;
         }
