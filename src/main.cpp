@@ -538,8 +538,8 @@ int main(int argc, char** argv) {
                 const std::string message = "Rewind length is now " +
                     std::to_string(rewindDurationSeconds) +
                     " seconds. The history will fill to this length as you play.";
-                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
-                    "Rewind length", message.c_str(), window);
+                // Avoid a blocking modal dialog here: on some Chromebook Linux
+                // desktops it can appear behind the emulator and look like a freeze.
                 std::cout << message << '\n';
             }
 
