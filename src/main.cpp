@@ -161,9 +161,11 @@ void drawMenuButtons(SDL_Renderer* renderer, int width, int height) {
 void printCartridgeInfo(const Cartridge& c, const std::filesystem::path& path) {
     std::cout << "Cartridge loaded: " << path.filename().string() << '\n'
               << "Mapper: " << static_cast<int>(c.mapper)
-              << (c.mapper == 0 ? " (NROM)\n" : c.mapper == 66 ? " (GxROM)\n" : "\n")
+              << (c.mapper == 0 ? " (NROM)\n" : c.mapper == 1 ? " (MMC1)\n" :
+                  c.mapper == 4 ? " (MMC3)\n" : c.mapper == 66 ? " (GxROM)\n" : "\n")
               << "PRG-ROM: " << c.prgRom.size()/1024 << " KiB\n"
-              << "CHR: " << (c.usesChrRam ? "8 KiB CHR-RAM" : "8 KiB CHR-ROM") << '\n'
+              << "CHR: " << (c.usesChrRam ? std::to_string(c.chrData.size()/1024) + " KiB CHR-RAM" :
+                  std::to_string(c.chrData.size()/1024) + " KiB CHR-ROM") << '\n'
               << "Mirroring: " << mirroringName(c.mirroring) << '\n';
 }
 }
