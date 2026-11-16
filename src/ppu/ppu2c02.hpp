@@ -51,6 +51,7 @@ public:
     std::array<std::size_t, 64> debugVisiblePaletteIndexCounts() const;
     std::array<std::size_t, 32> debugVisiblePaletteSlotCounts() const;
     PPUBackgroundDebugInfo debugBackgroundInfo(int x, int y) const;
+    const std::array<std::uint8_t, 256>& debugOam() const { return oam; }
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
