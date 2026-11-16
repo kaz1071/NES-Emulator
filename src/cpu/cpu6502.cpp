@@ -50,7 +50,7 @@ void CPU6502::write(std::uint16_t address, std::uint8_t value) {
     // cycle depends on the parity of the CPU cycle on which DMA begins.
     std::uint8_t dmaPage = 0;
     if (bus != nullptr && bus->consumeOamDmaRequest(dmaPage)) {
-        const int alignmentCycles = static_cast<int>(totalCpuCycles & 1U);
+        const int alignmentCycles = (totalCpuCycles & 1U) == 0 ? 1 : 0;
         for (int cycle = 0; cycle < 1 + alignmentCycles; ++cycle) {
             ++cpuCyclesInStep;
             clockCpuCycle();
