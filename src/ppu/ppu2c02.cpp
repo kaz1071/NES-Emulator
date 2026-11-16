@@ -162,9 +162,14 @@ void PPU2C02::clock() {
         lineFineX[static_cast<std::size_t>(scanline)] = fineX;
     }
     if (rendering && renderLine) {
-        if ((ppuCycle >= 1 && ppuCycle <= 256) ||
-            (ppuCycle >= 321 && ppuCycle <= 336)) {
-            if ((ppuCycle & 0x07) == 0) incrementScrollX();
+        // This renderer samples one scroll position per scanline rather
+        // than emulating the PPU's background fetch/shift-register pipeline.
+        // Only advance X across the visible 256-pixel scanline. The hardware's
+        // dot-328/dot-336 prefetch increments would otherwise be included in
+        // the next saved scanline position, shifting the drawn map by 16 px.
+        if (ppuCycle >= 1 && ppuCycle <= 256 &&
+            (ppuCycle & 0x07) == 0) {
+            incrementScrollX();
         }
         if (ppuCycle == 256) incrementScrollY();
         if (ppuCycle == 257) {
