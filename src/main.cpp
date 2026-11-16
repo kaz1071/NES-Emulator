@@ -359,7 +359,7 @@ int main(int argc, char** argv) {
                       << bus.ppuCycleDebug()
                       << " CTRL=$" << std::hex << static_cast<int>(bus.ppuControlDebug())
                       << " MASK=$" << static_cast<int>(bus.ppuMaskDebug())
-                      << std::dec << '\\n';
+                      << std::dec << '\n';
 
             const auto& oam = bus.ppuOamDebug();
             std::cout << "Visible sprites (index:y/tile/attr/x; B=behind):";
@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
                           << "/$" << static_cast<int>(attr) << "/$" << static_cast<int>(sx)
                           << ((attr & 0x20) ? ",B" : "") << "]";
             }
-            std::cout << std::dec << '\\n';
+            std::cout << std::dec << '\n';
             instructionsSinceDiagnostic = 0;
             lastCpuDiagnostic = diagnosticNow;
         }
