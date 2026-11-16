@@ -466,7 +466,7 @@ int main(int argc, char** argv) {
                           << "/$" << static_cast<int>(attr) << "/$" << static_cast<int>(sx)
                           << (attr & 0x20 ? ",behind" : ",front") << "]";
             }
-            std::cout << std::dec << '\\n';
+            std::cout << std::dec << '\n';
             std::cout << "CPU trace (oldest->newest):";
             for (std::size_t i = 0; i < 16; ++i) {
                 std::cout << " $" << std::hex << cpu.debugTraceAddress(i)
