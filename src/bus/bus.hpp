@@ -7,6 +7,17 @@
 
 class NESBus {
 public:
+    struct State {
+        std::array<std::uint8_t, 2048> ram{};
+        std::array<std::uint8_t, 8192> prgRam{};
+        std::array<std::uint8_t, 2> controllerState{}, controllerShift{};
+        bool controllerStrobe = false, oamDmaPending = false;
+        std::uint8_t oamDmaPage = 0;
+        PPU2C02::State ppu{};
+        CartridgeState cartridge{};
+    };
+    State saveState() const;
+    bool loadState(const State& state);
     void connectCartridge(Cartridge* cartridge);
     void reset();
     void clockPpu();
