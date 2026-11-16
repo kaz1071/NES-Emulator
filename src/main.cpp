@@ -526,11 +526,14 @@ int main(int argc, char** argv) {
                 const bool saving = event.key.keysym.sym == SDLK_F5;
                 const std::string selectedPath = chooseStateFile(saving);
                 if (!selectedPath.empty()) {
+                    std::filesystem::path statePath(selectedPath);
+                    if (saving && statePath.extension().empty())
+                        statePath += ".savestate";
                     std::string stateError;
                     const bool success = saving
-                        ? saveStateFile(selectedPath, cartridge, cpu, bus,
+                        ? saveStateFile(statePath, cartridge, cpu, bus,
                                         cpuCycleRemainder, stateError)
-                        : loadStateFile(selectedPath, cartridge, cpu, bus,
+                        : loadStateFile(statePath, cartridge, cpu, bus,
                                         cpuCycleRemainder, stateError);
                     if (success) {
                         if (!saving) {
