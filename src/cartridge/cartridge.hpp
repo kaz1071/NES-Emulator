@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <array>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -28,7 +29,16 @@ struct Cartridge {
     std::uint8_t mmc1ChrBank0 = 0;
     std::uint8_t mmc1ChrBank1 = 0;
     std::uint8_t mmc1PrgBank = 0;
+    std::array<std::uint8_t, 8> mmc3BankRegisters{};
+    std::uint8_t mmc3BankSelect = 0;
+    bool mmc3PrgRamEnabled = true;
+    bool mmc3PrgRamWriteProtected = false;
+    std::uint8_t mmc3IrqLatch = 0, mmc3IrqCounter = 0;
+    bool mmc3IrqReload = false, mmc3IrqEnabled = false, mmc3IrqPending = false;
     bool prgRamEnabled() const;
+    bool prgRamWritable() const;
+    bool irqPending() const;
+    void clockScanline();
 
     std::uint8_t readPrg(std::uint16_t address) const;
     void writePrg(std::uint16_t address, std::uint8_t value);
