@@ -107,6 +107,8 @@ void CPU6502::reset() {
     status = FLAG_UNUSED | FLAG_INTERRUPT;
     isHalted = false;
     lastStepCycleCount = 0;
+    cpuCyclesInStep = 0;
+    clockBusAccesses = false;
     lastError.clear();
     traceAddresses.fill(0);
     traceOpcodes.fill(0);
@@ -460,6 +462,7 @@ bool CPU6502::step() {
         case 0xEA: break;
         case 0x00:
             isHalted = true;
+            clockBusAccesses = false;
             lastError = "BRK instruction reached; CPU stopped.";
             return false;
         default: {
@@ -468,6 +471,7 @@ bool CPU6502::step() {
             constexpr char digits[] = "0123456789ABCDEF";
             lastError += digits[(opcode >> 4) & 0x0F];
             lastError += digits[opcode & 0x0F];
+            clockBusAccesses = false;
             return false;
         }
     }
