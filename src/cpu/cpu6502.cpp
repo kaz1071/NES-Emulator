@@ -75,6 +75,7 @@ void CPU6502::write(std::uint16_t address, std::uint8_t value) {
 void CPU6502::clockCpuCycle() {
     ++totalCpuCycles;
     if (bus != nullptr) {
+        bus->clockCpuCycle();
         bus->clockPpu();
         bus->clockPpu();
         bus->clockPpu();
