@@ -480,7 +480,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::cout << "NES Emulator started. Use QUIT to exit; F11 toggles fullscreen; F5 saves a state; F8 loads a state; hold R to rewind.\n";
+    std::cout << "NES Emulator started. Use QUIT to exit; 0 toggles fullscreen; 5 saves a state; 8 loads a state; 6 changes rewind length; hold R to rewind.\n";
     if (hasCartridge)
         std::cout << "Experimental CPU execution active (official 6502 opcodes supported; instruction-cycle timing enabled, not cycle-perfect).\n";
 
@@ -516,7 +516,7 @@ int main(int argc, char** argv) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) running = false;
             if (event.type == SDL_KEYDOWN && event.key.repeat == 0 &&
-                event.key.keysym.sym == SDLK_F11) {
+                event.key.keysym.sym == SDLK_0) {
                 const Uint32 mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
                 if (SDL_SetWindowFullscreen(window, mode) == 0) {
                     fullscreen = !fullscreen;
@@ -526,7 +526,7 @@ int main(int argc, char** argv) {
             }
 
             if (event.type == SDL_KEYDOWN && event.key.repeat == 0 && hasCartridge &&
-                event.key.keysym.sym == SDLK_F6) {
+                event.key.keysym.sym == SDLK_6) {
                 const auto current = std::find(REWIND_OPTIONS.begin(), REWIND_OPTIONS.end(),
                                                rewindDurationSeconds);
                 const auto next = current == REWIND_OPTIONS.end() ||
@@ -544,8 +544,8 @@ int main(int argc, char** argv) {
             }
 
             if (event.type == SDL_KEYDOWN && event.key.repeat == 0 && hasCartridge &&
-                (event.key.keysym.sym == SDLK_F5 || event.key.keysym.sym == SDLK_F8)) {
-                const bool saving = event.key.keysym.sym == SDLK_F5;
+                (event.key.keysym.sym == SDLK_5 || event.key.keysym.sym == SDLK_8)) {
+                const bool saving = event.key.keysym.sym == SDLK_5;
                 const std::string selectedPath = chooseStateFile(saving);
                 if (!selectedPath.empty()) {
                     std::filesystem::path statePath(selectedPath);
