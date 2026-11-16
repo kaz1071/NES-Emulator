@@ -20,6 +20,10 @@ void NESBus::clockPpu() {
     ppu.clock();
 }
 
+void NESBus::clockCpuCycle() {
+    if (cartridge != nullptr) cartridge->clockCpuCycle();
+}
+
 bool NESBus::consumeNmi() {
     return ppu.consumeNmi();
 }
