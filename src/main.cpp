@@ -437,7 +437,7 @@ int main(int argc, char** argv) {
                       << frame.size() << '\n';
             // Sample the rightmost tile-width while scrolling. Each entry shows
             // the nametable tile and pattern pixel selected by the scanline renderer.
-            std::cout << "Scroll-edge tile samples (x=248..255):\\n";
+            std::cout << "Scroll-edge tile samples (x=248..255):\n";
             constexpr std::array<int, 5> diagnosticRows{0, 60, 120, 180, 239};
             for (const int y : diagnosticRows) {
                 std::cout << " y=" << y;
@@ -453,7 +453,7 @@ int main(int argc, char** argv) {
                               << "/tx" << static_cast<int>(info.tileX)
                               << "/fx" << static_cast<int>(info.finePixelX) << "]";
                 }
-                std::cout << std::dec << '\\n';
+                std::cout << std::dec << '\n';
             }
             std::cout << "CPU trace (oldest->newest):";
             for (std::size_t i = 0; i < 16; ++i) {
