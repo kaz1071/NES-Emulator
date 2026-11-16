@@ -234,9 +234,9 @@ int main(int argc, char** argv) {
     Uint32 lastCpuDiagnostic = SDL_GetTicks();
     std::uint64_t instructionsSinceDiagnostic = 0;
 
-    // An NTSC frame is 89,342 PPU dots. At 3 PPU dots per CPU
-    // cycle, frame lengths alternate between 29,780 and 29,781
-    // whole CPU cycles. Carry the remainder so timing does not drift.
+    // An NTSC frame is 89,342 PPU dots. CPU bus accesses now advance
+    // the PPU by three dots each; carry the fractional frame remainder
+    // so the target CPU budget alternates between 29,780 and 29,781 cycles.
     int cpuCycleRemainder = 0;
 
     // Pace the emulator at approximately 60 frames per second.
