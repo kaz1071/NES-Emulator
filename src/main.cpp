@@ -430,7 +430,7 @@ int main(int argc, char** argv) {
     CPU6502 cpu;
     bool hasCartridge = false;
     bool cpuStopReported = false;
-    std::string windowTitle = "NES Emulator";
+    std::string windowTitle = "PixelCore - NES";
     bus.reset();
 
     if (argc > 1) {
