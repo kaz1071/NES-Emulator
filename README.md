@@ -58,7 +58,7 @@ Start the emulator:
 ./build/nes-emulator
 ```
 
-Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one of the linked game pages in your web browser, or place the five supported local game files in the `roms/` folder and choose **PRELOADED ROMS**. While a game is running, press **F5** to choose a file and save a `.savestate`, press **F8** to load a save-state for the currently loaded ROM, or hold **R** to rewind. Rewind keeps roughly three seconds of recent gameplay in memory; it is temporary and is not a substitute for a saved state. The preloaded list is ordered as Zelda, Super Mario Bros. + Duck Hunt, Super Mario Bros. 2, The Lost Levels, and Super Mario Bros. 3. The `roms/` folder is ignored by Git, so ROM files are not uploaded to the public repository. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
+Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one of the linked game pages in your web browser, or place the five supported local game files in the `roms/` folder and choose **PRELOADED ROMS**. While a game is running, press **F5** to choose a file and save a `.savestate`, press **F8** to load a save-state for the currently loaded ROM, or hold **R** to rewind. Press **F6** to cycle the rewind buffer through 3, 5, 10, and 15 seconds. The default is 10 seconds. The buffer fills as you play and uses additional memory for longer durations; it is temporary and is not a substitute for a saved state. The preloaded list is ordered as Zelda, Super Mario Bros. + Duck Hunt, Super Mario Bros. 2, The Lost Levels, and Super Mario Bros. 3. The `roms/` folder is ignored by Git, so ROM files are not uploaded to the public repository. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
 
 ```bash
 ./build/nes-emulator /path/to/game.nes
@@ -70,11 +70,11 @@ The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapp
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
-## Version 0.23.0
+## Version 0.24.0\n\n- Added selectable rewind history lengths: 3, 5, 10, or 15 seconds. Press **F6** while a game is running to cycle the setting; the default is 10 seconds.\n\n## Version 0.23.0
 
 - Added portable-within-this-build `.savestate` files that capture CPU registers/cycles, system RAM, PRG-RAM, controller shift state, PPU registers/memory/render state, CHR-RAM, and supported mapper registers/IRQ state.
 - Save states are checked against the loaded ROM fingerprint and mapper before restoring.
-- Added a rolling rewind buffer (about three seconds, sampled every other frame); hold **R** to rewind, **F5** to save a state, and **F8** to load one.
+- Added a rolling rewind buffer (about three seconds, sampled every other frame); hold **R** to rewind, **F5** to save a state, **F8** to load one, and **F6** to select rewind length.
 
 ## Version 0.22.0
 
