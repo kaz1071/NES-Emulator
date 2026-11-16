@@ -435,6 +435,36 @@ int main(int argc, char** argv) {
             std::cout << "Frame debug: unique-colors=" << colorCount
                       << " non-black-pixels=" << nonBlackPixels << "/"
                       << frame.size() << '\n';
+            // Inspect the final five NES columns for a persistent edge-color
+            // anomaly. Report the most common output colors in each column.
+            std::cout << "Right-edge pixels (x=251..255; color:count):";
+            for (int x = 251; x < 256; ++x) {
+                std::array<std::pair<std::uint32_t, int>, 240> frequencies{};
+                int used = 0;
+                for (int y = 0; y < NES_HEIGHT; ++y) {
+                    const std::uint32_t color =
+                        frame[static_cast<std::size_t>(y) * NES_WIDTH + x];
+                    int slot = 0;
+                    while (slot < used && frequencies[slot].first != color) ++slot;
+                    if (slot == used) {
+                        frequencies[used] = {color, 0};
+                        ++used;
+                    }
+                    ++frequencies[slot].second;
+                }
+                std::sort(frequencies.begin(), frequencies.begin() + used,
+                    [](const auto& a, const auto& b) {
+                        return a.second > b.second;
+                    });
+                std::cout << " x" << x << "=[";
+                for (int i = 0; i < std::min(3, used); ++i) {
+                    if (i) std::cout << ",";
+                    std::cout << "$" << std::hex << frequencies[i].first
+                              << std::dec << ":" << frequencies[i].second;
+                }
+                std::cout << "]";
+            }
+            std::cout << '\n';
             std::cout << "CPU trace (oldest->newest):";
             for (std::size_t i = 0; i < 16; ++i) {
                 std::cout << " $" << std::hex << cpu.debugTraceAddress(i)
