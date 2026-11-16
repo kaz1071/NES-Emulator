@@ -35,6 +35,8 @@ private:
     NESBus* bus = nullptr;
     bool isHalted = false;
     int lastStepCycleCount = 0;
+    int cpuCyclesInStep = 0;
+    bool clockBusAccesses = false;
     std::string lastError;
     std::array<std::uint16_t, 16> traceAddresses{};
     std::array<std::uint8_t, 16> traceOpcodes{};
@@ -49,4 +51,6 @@ private:
     std::uint8_t pop();
     void adc(std::uint8_t value);
     void compare(std::uint8_t reg, std::uint8_t value);
+    void clockCpuCycle();
+    void finishStepCycles(int totalCycles);
 };
