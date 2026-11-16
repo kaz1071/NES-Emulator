@@ -450,6 +450,23 @@ int main(int argc, char** argv) {
                 }
                 std::cout << std::dec << '\n';
             }
+            // Dump active OAM entries so sprite tile, position, and priority
+            // can be compared while a Piranha Plant is extended/retracting.
+            const auto& oam = bus.ppuOamDebug();
+            std::cout << "Sprite OAM (index:y/tile/attr/x; behindBG=attr bit 5):";
+            for (std::size_t s = 0; s < 64; ++s) {
+                const std::uint8_t sy = oam[s * 4];
+                const std::uint8_t tile = oam[s * 4 + 1];
+                const std::uint8_t attr = oam[s * 4 + 2];
+                const std::uint8_t sx = oam[s * 4 + 3];
+                if ((sy == 0 && tile == 0 && attr == 0 && sx == 0) ||
+                    sy == 0xEF || sy == 0xFF) continue;
+                std::cout << " [" << std::dec << s << ":$" << std::hex
+                          << static_cast<int>(sy) << "/$" << static_cast<int>(tile)
+                          << "/$" << static_cast<int>(attr) << "/$" << static_cast<int>(sx)
+                          << (attr & 0x20 ? ",behind" : ",front") << "]";
+            }
+            std::cout << std::dec << '\\n';
             std::cout << "CPU trace (oldest->newest):";
             for (std::size_t i = 0; i < 16; ++i) {
                 std::cout << " $" << std::hex << cpu.debugTraceAddress(i)
