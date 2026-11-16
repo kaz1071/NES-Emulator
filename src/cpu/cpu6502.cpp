@@ -41,13 +41,39 @@ std::uint8_t CPU6502::read(std::uint16_t address) {
 
 void CPU6502::write(std::uint16_t address, std::uint8_t value) {
     if (bus != nullptr) bus->write(address, value);
-    if (clockBusAccesses) {
-        ++cpuCyclesInStep;
-        clockCpuCycle();
+    if (!clockBusAccesses) return;
+
+    ++cpuCyclesInStep;
+    clockCpuCycle();
+
+    // OAM DMA suspends the CPU for 513 or 514 cycles. The extra alignment
+    // cycle depends on the parity of the CPU cycle on which DMA begins.
+    std::uint8_t dmaPage = 0;
+    if (bus != nullptr && bus->consumeOamDmaRequest(dmaPage)) {
+        const int alignmentCycles = static_cast<int>(totalCpuCycles & 1U);
+        for (int cycle = 0; cycle < 1 + alignmentCycles; ++cycle) {
+            ++cpuCyclesInStep;
+            clockCpuCycle();
+        }
+
+        const std::uint16_t source = static_cast<std::uint16_t>(dmaPage) << 8;
+        for (std::uint16_t offset = 0; offset < 0x100; ++offset) {
+            // DMA alternates a CPU-bus read and an OAMDATA write, with one
+            // PPU clock interval for each half of the transfer.
+            const std::uint8_t dmaValue = bus->read(
+                static_cast<std::uint16_t>(source + offset));
+            ++cpuCyclesInStep;
+            clockCpuCycle();
+
+            bus->writeOamDmaByte(dmaValue);
+            ++cpuCyclesInStep;
+            clockCpuCycle();
+        }
     }
 }
 
 void CPU6502::clockCpuCycle() {
+    ++totalCpuCycles;
     if (bus != nullptr) {
         bus->clockPpu();
         bus->clockPpu();
@@ -108,6 +134,7 @@ void CPU6502::reset() {
     isHalted = false;
     lastStepCycleCount = 0;
     cpuCyclesInStep = 0;
+    totalCpuCycles = 0;
     clockBusAccesses = false;
     lastError.clear();
     traceAddresses.fill(0);
