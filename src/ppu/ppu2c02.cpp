@@ -20,6 +20,68 @@ void PPU2C02::connectCartridge(Cartridge* loadedCartridge) {
     cartridge = loadedCartridge;
 }
 
+PPU2C02::State PPU2C02::saveState() const {
+    State state{};
+    state.nametableRam = nametableRam;
+    state.paletteRam = paletteRam;
+    state.oam = oam;
+    state.control = control;
+    state.mask = mask;
+    state.status = status;
+    state.oamAddress = oamAddress;
+    state.openBus = openBus;
+    state.readBuffer = readBuffer;
+    state.vramAddress = vramAddress;
+    state.temporaryAddress = temporaryAddress;
+    state.fineX = fineX;
+    state.scrollX = scrollX;
+    state.scrollY = scrollY;
+    state.writeSecond = writeSecond;
+    state.ppuCycle = ppuCycle;
+    state.scanline = scanline;
+    state.nmiPending = nmiPending;
+    state.vblankEvents = vblankEvents;
+    state.vblankStatusReads = vblankStatusReads;
+    state.lastStatusRead = lastStatusRead;
+    state.lineScrollAddress = lineScrollAddress;
+    state.lineFineX = lineFineX;
+    state.lineMask = lineMask;
+    state.framePixels = framePixels;
+    state.lineOam = lineOam;
+    state.lineSpriteControl = lineSpriteControl;
+    return state;
+}
+
+void PPU2C02::loadState(const State& state) {
+    nametableRam = state.nametableRam;
+    paletteRam = state.paletteRam;
+    oam = state.oam;
+    control = state.control;
+    mask = state.mask;
+    status = state.status;
+    oamAddress = state.oamAddress;
+    openBus = state.openBus;
+    readBuffer = state.readBuffer;
+    vramAddress = state.vramAddress;
+    temporaryAddress = state.temporaryAddress;
+    fineX = state.fineX;
+    scrollX = state.scrollX;
+    scrollY = state.scrollY;
+    writeSecond = state.writeSecond;
+    ppuCycle = state.ppuCycle;
+    scanline = state.scanline;
+    nmiPending = state.nmiPending;
+    vblankEvents = state.vblankEvents;
+    vblankStatusReads = state.vblankStatusReads;
+    lastStatusRead = state.lastStatusRead;
+    lineScrollAddress = state.lineScrollAddress;
+    lineFineX = state.lineFineX;
+    lineMask = state.lineMask;
+    framePixels = state.framePixels;
+    lineOam = state.lineOam;
+    lineSpriteControl = state.lineSpriteControl;
+}
+
 void PPU2C02::reset() {
     nametableRam.fill(0);
     paletteRam.fill(0);
