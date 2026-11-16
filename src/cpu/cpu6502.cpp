@@ -26,6 +26,28 @@ constexpr std::array<std::uint8_t, 256> CPU_INSTRUCTION_CYCLES = [] {
 }();
 }
 
+CPU6502::State CPU6502::saveState() const {
+    return {a, x, y, sp, status, pc, isHalted, lastStepCycleCount, totalCpuCycles};
+}
+
+void CPU6502::loadState(const State& state) {
+    a = state.a;
+    x = state.x;
+    y = state.y;
+    sp = state.sp;
+    status = state.status;
+    pc = state.pc;
+    isHalted = state.halted;
+    lastStepCycleCount = state.lastStepCycleCount;
+    totalCpuCycles = state.totalCpuCycles;
+    cpuCyclesInStep = 0;
+    clockBusAccesses = false;
+    lastError.clear();
+    traceAddresses.fill(0);
+    traceOpcodes.fill(0);
+    traceIndex = 0;
+}
+
 void CPU6502::connectBus(NESBus* connectedBus) {
     bus = connectedBus;
 }
