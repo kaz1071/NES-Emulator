@@ -480,7 +480,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::cout << "NES Emulator started. Use the QUIT button to exit; F11 toggles fullscreen.\n";
+    std::cout << "NES Emulator started. Use QUIT to exit; F11 toggles fullscreen; F5 saves a state; F8 loads a state; hold R to rewind.\n";
     if (hasCartridge)
         std::cout << "Experimental CPU execution active (official 6502 opcodes supported; instruction-cycle timing enabled, not cycle-perfect).\n";
 
