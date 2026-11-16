@@ -5,6 +5,20 @@
 #include <cstdint>
 #include <cstddef>
 
+struct PPUBackgroundDebugInfo {
+    std::uint16_t scrollAddress = 0;
+    std::uint8_t fineX = 0;
+    std::uint8_t tileX = 0;
+    std::uint8_t tileY = 0;
+    std::uint8_t tableX = 0;
+    std::uint8_t tableY = 0;
+    std::uint8_t finePixelX = 0;
+    std::uint8_t finePixelY = 0;
+    std::uint8_t tile = 0;
+    std::uint8_t pixel = 0;
+    std::uint8_t palette = 0;
+};
+
 class PPU2C02 {
 public:
     void connectCartridge(Cartridge* cartridge);
@@ -36,6 +50,7 @@ public:
     std::array<std::size_t, 4> debugVisiblePixelValueCounts() const;
     std::array<std::size_t, 64> debugVisiblePaletteIndexCounts() const;
     std::array<std::size_t, 32> debugVisiblePaletteSlotCounts() const;
+    PPUBackgroundDebugInfo debugBackgroundInfo(int x, int y) const;
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
 
     std::uint8_t cpuRead(std::uint16_t registerAddress);
