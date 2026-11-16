@@ -157,12 +157,11 @@ void PPU2C02::clock() {
 
     const bool rendering = (mask & 0x18) != 0;
     const bool renderLine = (scanline >= 0 && scanline < 240) || scanline == 261;
+    if (scanline >= 0 && scanline < 240 && ppuCycle == 1) {
+        lineScrollAddress[static_cast<std::size_t>(scanline)] = vramAddress;
+        lineFineX[static_cast<std::size_t>(scanline)] = fineX;
+    }
     if (rendering && renderLine) {
-        if (scanline >= 0 && scanline < 240 && ppuCycle == 1) {
-            lineScrollAddress[static_cast<std::size_t>(scanline)] = vramAddress;
-            lineFineX[static_cast<std::size_t>(scanline)] = fineX;
-        }
-
         if ((ppuCycle >= 1 && ppuCycle <= 256) ||
             (ppuCycle >= 321 && ppuCycle <= 336)) {
             if ((ppuCycle & 0x07) == 0) incrementScrollX();
