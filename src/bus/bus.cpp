@@ -11,6 +11,8 @@ void NESBus::reset() {
     controllerState.fill(0);
     controllerShift.fill(0);
     controllerStrobe = false;
+    oamDmaPending = false;
+    oamDmaPage = 0;
     ppu.reset();
 }
 
@@ -63,14 +65,11 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
     } else if (address < 0x4000) {
         ppu.cpuWrite(address, value);
     } else if (address == 0x4014) {
-        // OAM DMA: copy one CPU memory page into the PPU's 256-byte OAM.
-        // The transfer's CPU stall is not yet modeled, but the data transfer
-        // itself is required for sprites (including sprite-zero hit) to work.
-        const std::uint16_t source = static_cast<std::uint16_t>(value) << 8;
-        ppu.cpuWrite(0x2003, 0x00);
-        for (std::uint16_t offset = 0; offset < 0x100; ++offset) {
-            ppu.cpuWrite(0x2004, read(static_cast<std::uint16_t>(source + offset)));
-        }
+        // The CPU performs the 513/514-cycle transfer after this write ends.
+        // Keep the request here so DMA reads and OAM writes can be interleaved
+        // with PPU clocks by the CPU rather than copied instantaneously.
+        oamDmaPage = value;
+        oamDmaPending = true;
     } else if (address == 0x4016) {
         const bool nextStrobe = (value & 1) != 0;
         if (nextStrobe || controllerStrobe) {
@@ -87,4 +86,16 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
 
 void NESBus::renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const {
     ppu.renderFrame(pixels);
+}
+
+bool NESBus::consumeOamDmaRequest(std::uint8_t& page) {
+    if (!oamDmaPending) return false;
+    page = oamDmaPage;
+    oamDmaPending = false;
+    return true;
+}
+
+void NESBus::writeOamDmaByte(std::uint8_t value) {
+    // DMA writes through OAMDATA, preserving the current OAMADDR and wraparound.
+    ppu.cpuWrite(0x2004, value);
 }
