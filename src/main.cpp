@@ -537,6 +537,9 @@ int main(int argc, char** argv) {
                             rewindHistory.clear();
                             rewindHistory.push_back(captureSnapshot(cpu, bus, cpuCycleRemainder));
                             rewindCaptureDivider = 0;
+                            cpuStopReported = false;
+                            instructionsSinceDiagnostic = 0;
+                            lastCpuDiagnostic = SDL_GetTicks();
                         }
                         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
                             saving ? "Save state created" : "Save state loaded",
