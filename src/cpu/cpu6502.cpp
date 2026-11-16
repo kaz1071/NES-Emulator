@@ -31,11 +31,37 @@ void CPU6502::connectBus(NESBus* connectedBus) {
 }
 
 std::uint8_t CPU6502::read(std::uint16_t address) {
-    return bus != nullptr ? bus->read(address) : 0;
+    const std::uint8_t value = bus != nullptr ? bus->read(address) : 0;
+    if (clockBusAccesses) {
+        ++cpuCyclesInStep;
+        clockCpuCycle();
+    }
+    return value;
 }
 
 void CPU6502::write(std::uint16_t address, std::uint8_t value) {
     if (bus != nullptr) bus->write(address, value);
+    if (clockBusAccesses) {
+        ++cpuCyclesInStep;
+        clockCpuCycle();
+    }
+}
+
+void CPU6502::clockCpuCycle() {
+    if (bus != nullptr) {
+        bus->clockPpu();
+        bus->clockPpu();
+        bus->clockPpu();
+    }
+}
+
+void CPU6502::finishStepCycles(int totalCycles) {
+    while (cpuCyclesInStep < totalCycles) {
+        ++cpuCyclesInStep;
+        clockCpuCycle();
+    }
+    lastStepCycleCount = cpuCyclesInStep;
+    clockBusAccesses = false;
 }
 
 void CPU6502::setFlag(std::uint8_t flag, bool value) {
@@ -92,6 +118,8 @@ void CPU6502::reset() {
 
 bool CPU6502::step() {
     if (isHalted) return false;
+    cpuCyclesInStep = 0;
+    clockBusAccesses = true;
 
     if (bus != nullptr && bus->consumeNmi()) {
         push(static_cast<std::uint8_t>((pc >> 8) & 0xFF));
@@ -101,7 +129,7 @@ bool CPU6502::step() {
         const std::uint8_t low = read(0xFFFA);
         const std::uint8_t high = read(0xFFFB);
         pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
-        lastStepCycleCount = 7;
+        finishStepCycles(7);
         return true;
     }
 
@@ -444,7 +472,7 @@ bool CPU6502::step() {
         }
     }
     status |= FLAG_UNUSED;
-    lastStepCycleCount = static_cast<int>(CPU_INSTRUCTION_CYCLES[opcode]) + extraCycles;
+    finishStepCycles(static_cast<int>(CPU_INSTRUCTION_CYCLES[opcode]) + extraCycles);
     return true;
 }
 
