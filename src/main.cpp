@@ -540,7 +540,7 @@ int main(int argc, char** argv) {
                     " seconds. The history will fill to this length as you play.";
                 SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
                     "Rewind length", message.c_str(), window);
-                std::cout << message << '\\n';
+                std::cout << message << '\n';
             }
 
             if (event.type == SDL_KEYDOWN && event.key.repeat == 0 && hasCartridge &&
