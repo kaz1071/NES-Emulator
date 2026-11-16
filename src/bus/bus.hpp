@@ -14,6 +14,8 @@ public:
     bool irqPending() const;
     std::uint8_t read(std::uint16_t address);
     void write(std::uint16_t address, std::uint8_t value);
+    bool consumeOamDmaRequest(std::uint8_t& page);
+    void writeOamDmaByte(std::uint8_t value);
     void setControllerState(std::uint8_t port, std::uint8_t buttons);
     void renderFrame(std::array<std::uint32_t, 256 * 240>& pixels) const;
     std::uint8_t ppuControlDebug() const { return ppu.debugControl(); }
@@ -48,6 +50,8 @@ private:
     std::array<std::uint8_t, 2> controllerState{};
     std::array<std::uint8_t, 2> controllerShift{};
     bool controllerStrobe = false;
+    bool oamDmaPending = false;
+    std::uint8_t oamDmaPage = 0;
     Cartridge* cartridge = nullptr;
     PPU2C02 ppu;
 };
