@@ -5,6 +5,33 @@ void NESBus::connectCartridge(Cartridge* loadedCartridge) {
     ppu.connectCartridge(loadedCartridge);
 }
 
+NESBus::State NESBus::saveState() const {
+    State state{};
+    state.ram = ram;
+    state.prgRam = prgRam;
+    state.controllerState = controllerState;
+    state.controllerShift = controllerShift;
+    state.controllerStrobe = controllerStrobe;
+    state.oamDmaPending = oamDmaPending;
+    state.oamDmaPage = oamDmaPage;
+    state.ppu = ppu.saveState();
+    if (cartridge != nullptr) state.cartridge = cartridge->saveState();
+    return state;
+}
+
+bool NESBus::loadState(const State& state) {
+    if (cartridge == nullptr || !cartridge->loadState(state.cartridge)) return false;
+    ram = state.ram;
+    prgRam = state.prgRam;
+    controllerState = state.controllerState;
+    controllerShift = state.controllerShift;
+    controllerStrobe = state.controllerStrobe;
+    oamDmaPending = state.oamDmaPending;
+    oamDmaPage = state.oamDmaPage;
+    ppu.loadState(state.ppu);
+    return true;
+}
+
 void NESBus::reset() {
     ram.fill(0);
     prgRam.fill(0);
