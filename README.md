@@ -2,7 +2,7 @@
 
 A custom NES emulator built from scratch in C++ using SDL2, designed for Linux.
 
-The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0) and GxROM (mapper 66), an experimental partial 6502 CPU, and an initial PPU renderer.
+The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), MMC3 (mapper 4), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
 
 ## Current status
 
@@ -12,6 +12,8 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] Linux desktop file picker
 - [x] Standard iNES header parsing
 - [x] NROM (mapper 0) PRG-ROM loading
+- [x] MMC1 (mapper 1) serial registers, PRG/CHR banking, and mirroring
+- [x] MMC3 (mapper 4) PRG/CHR banking, mirroring, PRG-RAM protection, and approximate scanline IRQ
 - [x] GxROM (mapper 66) bank switching for up to 128 KiB PRG-ROM and 32 KiB CHR-ROM
 - [x] CHR-ROM loading and CHR-RAM allocation
 - [x] Trainer offset and mirroring detection
@@ -59,7 +61,7 @@ Click the large centered **LOAD ROM** button and choose a `.nes` file. Click **Q
 
 ## Compatibility notes
 
-The cartridge loader supports mapper 0 (NROM) with 16 or 32 KiB of PRG-ROM and mapper 66 (GxROM) with up to 128 KiB of PRG-ROM and 32 KiB of CHR-ROM. Mapper 66 bank switching is implemented for its 32 KiB PRG and 8 KiB CHR banks. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily playable yet: CPU instructions and cycle timing are incomplete, PPU rendering/timing is approximate, and DMA and audio are not implemented. Approximate vblank and initial NMI delivery are present, along with basic keyboard input for controller 1. Commercial games are not expected to run correctly at this stage.
+The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls and audio are not implemented, and some mapper board variants are unsupported.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
