@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PixelCore - NES
+Comment=Play Nintendo Entertainment System games
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/nes-emulator
+Icon=pixelcore-nes
+Terminal=true
+Categories=Game;Emulator;
+StartupNotify=true
