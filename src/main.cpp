@@ -494,7 +494,7 @@ int main(int argc, char** argv) {
         std::cout << "No ROM loaded. Choose LOAD ROM or PRELOADED ROMS to start a game.\n";
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << '\n';
         return 1;
     }
