@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(NES_Emulator VERSION 0.47.0 LANGUAGES CXX)
+project(NES_Emulator VERSION 0.48.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -62,6 +62,11 @@ if(BUILD_TESTING)
     target_include_directories(mmc5-chr-tests PRIVATE src/cartridge)
     target_compile_options(mmc5-chr-tests PRIVATE -Wall -Wextra -Wpedantic)
     add_test(NAME mmc5-chr-tests COMMAND mmc5-chr-tests)
+
+    add_executable(mmc5-audio-tests tests/mmc5_audio_tests.cpp src/apu/apu.cpp)
+    target_include_directories(mmc5-audio-tests PRIVATE src/apu)
+    target_compile_options(mmc5-audio-tests PRIVATE -Wall -Wextra -Wpedantic)
+    add_test(NAME mmc5-audio-tests COMMAND mmc5-audio-tests)
 
     add_executable(mmc5-prg-tests
         tests/mmc5_prg_tests.cpp
