@@ -57,6 +57,8 @@ CartridgeState Cartridge::saveState() const {
     state.mmc5VerticalSplitBank = mmc5VerticalSplitBank;
     state.mmc5IrqCompare = mmc5IrqCompare;
     state.mmc5IrqScanline = mmc5IrqScanline;
+    state.mmc5MultiplyA = mmc5MultiplyA;
+    state.mmc5MultiplyB = mmc5MultiplyB;
     state.mmc5IrqEnabled = mmc5IrqEnabled;
     state.mmc5IrqPending = mmc5IrqPending;
     state.mmc5InFrame = mmc5InFrame;
@@ -110,6 +112,8 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mmc5VerticalSplitBank = state.mmc5VerticalSplitBank;
     mmc5IrqCompare = state.mmc5IrqCompare;
     mmc5IrqScanline = state.mmc5IrqScanline;
+    mmc5MultiplyA = state.mmc5MultiplyA;
+    mmc5MultiplyB = state.mmc5MultiplyB;
     mmc5IrqEnabled = state.mmc5IrqEnabled;
     mmc5IrqPending = state.mmc5IrqPending;
     mmc5InFrame = state.mmc5InFrame;
@@ -202,6 +206,13 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
                 (mmc5IrqPending ? 0x80 : 0) | (mmc5InFrame ? 0x40 : 0));
             mmc5IrqPending = false;
             return value;
+        }
+        if (address == 0x5205 || address == 0x5206) {
+            const std::uint16_t product =
+                static_cast<std::uint16_t>(mmc5MultiplyA) * mmc5MultiplyB;
+            return address == 0x5205
+                ? static_cast<std::uint8_t>(product & 0xFF)
+                : static_cast<std::uint8_t>(product >> 8);
         }
         if (address == 0x5200 || address == 0x5201 || address == 0x5202 || address == 0x5203)
             return 0;
@@ -335,6 +346,8 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
         if (address == 0x5201) { mmc5VerticalSplitScroll = value; return; }
         if (address == 0x5202) { mmc5VerticalSplitBank = value; return; }
         if (address == 0x5203) { mmc5IrqCompare = value; return; }
+        if (address == 0x5205) { mmc5MultiplyA = value; return; }
+        if (address == 0x5206) { mmc5MultiplyB = value; return; }
         if (address == 0x5204) { mmc5IrqEnabled = (value & 0x80) != 0; return; }
         if (address >= 0x5113 && address <= 0x5117) {
             mmc5PrgRegisters[address - 0x5113] = value;
