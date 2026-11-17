@@ -82,6 +82,10 @@ struct Cartridge {
     std::uint8_t mapper71PrgBank = 0;
     std::uint8_t mapper94PrgBank = 0;
     std::uint8_t mapper15Register = 0, mapper15Mode = 0;
+    std::array<std::uint8_t, 8> mapper16ChrBanks{};
+    std::uint8_t mapper16PrgBank = 0;
+    std::uint16_t mapper16IrqLatch = 0, mapper16IrqCounter = 0;
+    bool mapper16IrqEnabled = false, mapper16IrqPending = false;
     std::uint16_t mapper40IrqCounter = 0;
     bool mapper40IrqEnabled = false;
     bool mapper40IrqPending = false;
