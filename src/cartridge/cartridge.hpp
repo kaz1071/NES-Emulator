@@ -29,6 +29,12 @@ struct CartridgeState {
     bool mapper40IrqEnabled = false, mapper40IrqPending = false;
     bool usesChrRam = false;
     std::array<std::uint8_t, 8192> chrRam{};
+    std::array<std::uint8_t, 5> mmc5PrgRegisters{};
+    std::array<std::uint8_t, 8> mmc5ChrRegisters{};
+    std::array<std::uint8_t, 8192> mmc5PrgRam{};
+    std::uint8_t mmc5PrgMode = 3, mmc5ChrMode = 3;
+    std::uint8_t mmc5RamProtect1 = 0, mmc5RamProtect2 = 0;
+    std::uint8_t mmc5ChrHigh = 0;
 };
 
 struct Cartridge {
@@ -56,6 +62,12 @@ struct Cartridge {
     std::uint16_t mapper40IrqCounter = 0;
     bool mapper40IrqEnabled = false;
     bool mapper40IrqPending = false;
+    std::array<std::uint8_t, 5> mmc5PrgRegisters{};
+    std::array<std::uint8_t, 8> mmc5ChrRegisters{};
+    std::array<std::uint8_t, 8192> mmc5PrgRam{};
+    std::uint8_t mmc5PrgMode = 3, mmc5ChrMode = 3;
+    std::uint8_t mmc5RamProtect1 = 0, mmc5RamProtect2 = 0;
+    std::uint8_t mmc5ChrHigh = 0;
     CartridgeState saveState() const;
     bool loadState(const CartridgeState& state);
     std::uint64_t romFingerprint() const;
