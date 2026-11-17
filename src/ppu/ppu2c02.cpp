@@ -129,17 +129,30 @@ PPUBackgroundDebugInfo PPU2C02::debugBackgroundInfo(int x, int y) const {
     const std::uint16_t pattern = static_cast<std::uint16_t>(
         ((lineSpriteControl[line] & 0x10) ? 0x1000 : 0) +
         info.tile * 16 + info.finePixelY);
+    const bool extended = cartridge != nullptr && cartridge->mapper == 5 &&
+                          cartridge->mmc5ExRamMode == 1;
+    const std::uint8_t extendedAttribute = extended
+        ? cartridge->mmc5ExRam[static_cast<std::size_t>(info.tileY) * 32 + info.tileX]
+        : 0;
     const int bit = 7 - info.finePixelX;
-    const std::uint8_t low = ppuRead(pattern);
-    const std::uint8_t high = ppuRead(static_cast<std::uint16_t>(pattern + 8));
+    const std::uint8_t low = extended
+        ? cartridge->readMmc5ExtendedChr(pattern, extendedAttribute & 0x3F)
+        : ppuRead(pattern);
+    const std::uint8_t high = extended
+        ? cartridge->readMmc5ExtendedChr(static_cast<std::uint16_t>(pattern + 8), extendedAttribute & 0x3F)
+        : ppuRead(static_cast<std::uint16_t>(pattern + 8));
     info.pixel = static_cast<std::uint8_t>(
         ((low >> bit) & 1) | (((high >> bit) & 1) << 1));
 
-    const std::uint16_t attributeAddress = static_cast<std::uint16_t>(
-        tableBase + 0x3C0 + (info.tileY / 4) * 8 + info.tileX / 4);
-    const std::uint8_t attribute = ppuRead(attributeAddress);
-    const int shift = ((info.tileY & 2) ? 4 : 0) + ((info.tileX & 2) ? 2 : 0);
-    info.palette = static_cast<std::uint8_t>((attribute >> shift) & 3);
+    if (extended) {
+        info.palette = static_cast<std::uint8_t>(extendedAttribute >> 6);
+    } else {
+        const std::uint16_t attributeAddress = static_cast<std::uint16_t>(
+            tableBase + 0x3C0 + (info.tileY / 4) * 8 + info.tileX / 4);
+        const std::uint8_t attribute = ppuRead(attributeAddress);
+        const int shift = ((info.tileY & 2) ? 4 : 0) + ((info.tileX & 2) ? 2 : 0);
+        info.palette = static_cast<std::uint8_t>((attribute >> shift) & 3);
+    }
     return info;
 }
 
@@ -166,18 +179,32 @@ std::uint8_t PPU2C02::backgroundPixelAt(
         tableBase + tileY * 32 + tileX));
     const std::uint16_t pattern = static_cast<std::uint16_t>(
         ((lineSpriteControl[static_cast<std::size_t>(y)] & 0x10) ? 0x1000 : 0) + tile * 16 + fineY);
+    const bool extended = cartridge != nullptr && cartridge->mapper == 5 &&
+                          cartridge->mmc5ExRamMode == 1;
+    const std::uint8_t extendedAttribute = extended
+        ? cartridge->mmc5ExRam[static_cast<std::size_t>(tileY) * 32 + tileX]
+        : 0;
     const int bit = 7 - finePixelX;
-    const std::uint8_t low = ppuRead(pattern);
-    const std::uint8_t high = ppuRead(static_cast<std::uint16_t>(pattern + 8));
+    const std::uint8_t low = extended
+        ? cartridge->readMmc5ExtendedChr(pattern, extendedAttribute & 0x3F)
+        : ppuRead(pattern);
+    const std::uint8_t high = extended
+        ? cartridge->readMmc5ExtendedChr(static_cast<std::uint16_t>(pattern + 8), extendedAttribute & 0x3F)
+        : ppuRead(static_cast<std::uint16_t>(pattern + 8));
     const std::uint8_t pixel = static_cast<std::uint8_t>(
         ((low >> bit) & 1) | (((high >> bit) & 1) << 1));
     if (pixel == 0) return 0;
 
-    const std::uint16_t attributeAddress = static_cast<std::uint16_t>(
-        tableBase + 0x3C0 + (tileY / 4) * 8 + tileX / 4);
-    const std::uint8_t attribute = ppuRead(attributeAddress);
-    const int shift = ((tileY & 2) ? 4 : 0) + ((tileX & 2) ? 2 : 0);
-    const std::uint8_t palette = static_cast<std::uint8_t>((attribute >> shift) & 3);
+    std::uint8_t palette = 0;
+    if (extended) {
+        palette = static_cast<std::uint8_t>(extendedAttribute >> 6);
+    } else {
+        const std::uint16_t attributeAddress = static_cast<std::uint16_t>(
+            tableBase + 0x3C0 + (tileY / 4) * 8 + tileX / 4);
+        const std::uint8_t attribute = ppuRead(attributeAddress);
+        const int shift = ((tileY & 2) ? 4 : 0) + ((tileX & 2) ? 2 : 0);
+        palette = static_cast<std::uint8_t>((attribute >> shift) & 3);
+    }
     if (paletteSlot != nullptr) {
         *paletteSlot = static_cast<std::uint8_t>(palette * 4 + pixel);
     }
