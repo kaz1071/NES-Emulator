@@ -5,7 +5,7 @@ A custom NES emulator built from scratch in C++ using SDL2, designed for Linux. 
 The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), MMC5 (mapper 5, PRG/CHR banking), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
 
 
-### MMC5 PRG, CHR, multiplier, ExRAM, and expansion pulse audio (0.48.0)
+### MMC5 PRG, CHR, multiplier, ExRAM, and expansion pulse audio (0.49.0)
 
 - Implements all four MMC5 PRG banking modes selected by `$5100`: 32 KiB, 16 KiB, mixed 16/8 KiB, and four independent 8 KiB windows.
 - Supports banked PRG-RAM at `$6000-$7FFF` through `$5113`, plus RAM-selected windows in the upper PRG area.
@@ -14,7 +14,7 @@ The project is in early development. It currently includes an SDL2 application, 
 - Implements the MMC5 8 KiB, 4 KiB, 2 KiB, and 1 KiB CHR banking modes.
 - Separates background CHR registers (`$5128-$512B`) from sprite CHR registers (`$5120-$5127`).
 - Implements the hardware multiplier at `$5205/$5206`, including save-state support.
-- Adds two MMC5 expansion pulse channels with duty, timer, envelope, length counters, `$5015` enable/status, audio mixing, and save-state support.
+- Adds two MMC5 expansion pulse channels plus PCM DAC output, PRG-read PCM mode, zero-byte PCM IRQ/status, and save-state support.
 - Corrects ExRAM CPU permissions for all `$5104` modes: modes 0/1 are rendering-time write-only, mode 2 is read/write, and mode 3 is read-only.
 - Adds regression tests for PRG/CHR banking, banked RAM, write protection, multiplier results, and save-state restoration.
 
@@ -94,7 +94,7 @@ Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one
 
 ## Compatibility notes
 
-The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. UxROM switches the lower 16 KiB PRG window while keeping the final PRG bank fixed in the upper window. CNROM keeps 16 or 32 KiB of PRG-ROM fixed and switches among up to four 8 KiB CHR-ROM banks; CHR-RAM cartridges remain supported without CHR banking. AxROM switches among 32 KiB PRG-ROM banks and selects lower or upper single-screen mirroring; this implementation expects CHR-RAM. MMC5 includes initial PRG/CHR banking, protected PRG-RAM, ExRAM/extended-attribute support, fill and vertical-split rendering, and an approximate scanline IRQ. MMC5 PCM audio and cycle-accurate MMC5 timing are not implemented. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls are approximate, APU timing is approximate, and DMC DMA uses an approximate 3/4-cycle CPU stall rather than full bus-cycle arbitration, and some mapper board variants are unsupported.
+The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. UxROM switches the lower 16 KiB PRG window while keeping the final PRG bank fixed in the upper window. CNROM keeps 16 or 32 KiB of PRG-ROM fixed and switches among up to four 8 KiB CHR-ROM banks; CHR-RAM cartridges remain supported without CHR banking. AxROM switches among 32 KiB PRG-ROM banks and selects lower or upper single-screen mirroring; this implementation expects CHR-RAM. MMC5 includes initial PRG/CHR banking, protected PRG-RAM, ExRAM/extended-attribute support, fill and vertical-split rendering, and an approximate scanline IRQ. MMC5 PCM read-mode timing and cycle-accurate MMC5 timing remain approximate. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls are approximate, APU timing is approximate, and DMC DMA uses an approximate 3/4-cycle CPU stall rather than full bus-cycle arbitration, and some mapper board variants are unsupported.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
