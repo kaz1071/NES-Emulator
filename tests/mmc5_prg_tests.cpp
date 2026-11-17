@@ -94,6 +94,30 @@ int main() {
     expect(cartridge.readPrg(0x6000) == 0xB7,
            "MMC5 PRG-RAM protection blocks writes but permits reads");
 
+    // ExRAM CPU permissions vary by $5104 mode.
+    cartridge.writePrg(0x5104, 2);
+    cartridge.writePrg(0x5C10, 0x42);
+    expect(cartridge.readPrg(0x5C10) == 0x42,
+           "ExRAM mode 2 permits CPU reads and writes");
+    cartridge.writePrg(0x5104, 3);
+    cartridge.writePrg(0x5C10, 0x99);
+    expect(cartridge.readPrg(0x5C10) == 0x42,
+           "ExRAM mode 3 permits reads but blocks writes");
+    cartridge.writePrg(0x5104, 0);
+    expect(cartridge.readPrg(0x5C10) == 0,
+           "ExRAM modes 0 and 1 are not CPU-readable");
+    cartridge.writePrg(0x5C10, 0x11);
+    expect(cartridge.mmc5ExRam[0x10] == 0x42,
+           "ExRAM modes 0 and 1 reject CPU writes outside rendering");
+    cartridge.clockScanline(true);
+    cartridge.writePrg(0x5C10, 0x77);
+    expect(cartridge.mmc5ExRam[0x10] == 0x77,
+           "ExRAM modes 0 and 1 accept CPU writes during rendering");
+    cartridge.writePrg(0x5104, 1);
+    expect(cartridge.readPrg(0x5C10) == 0,
+           "Extended-attribute ExRAM mode remains CPU unreadable");
+    cartridge.writePrg(0x5104, 2);
+
     // MMC5 hardware multiplier: operands are written independently and
     // the 16-bit product is exposed through $5205 (low) and $5206 (high).
     cartridge.writePrg(0x5205, 15);
