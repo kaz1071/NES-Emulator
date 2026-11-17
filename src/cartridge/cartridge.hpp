@@ -38,6 +38,7 @@ struct CartridgeState {
     std::array<std::uint8_t, 1024> mmc5ExRam{};
     std::uint8_t mmc5NametableMap = 0, mmc5ExRamMode = 0;
     std::uint8_t mmc5FillTile = 0, mmc5FillAttribute = 0;
+    std::uint8_t mmc5VerticalSplit = 0, mmc5VerticalSplitScroll = 0, mmc5VerticalSplitBank = 0;
 };
 
 struct Cartridge {
@@ -74,6 +75,7 @@ struct Cartridge {
     std::array<std::uint8_t, 1024> mmc5ExRam{};
     std::uint8_t mmc5NametableMap = 0, mmc5ExRamMode = 0;
     std::uint8_t mmc5FillTile = 0, mmc5FillAttribute = 0;
+    std::uint8_t mmc5VerticalSplit = 0, mmc5VerticalSplitScroll = 0, mmc5VerticalSplitBank = 0;
     CartridgeState saveState() const;
     bool loadState(const CartridgeState& state);
     std::uint64_t romFingerprint() const;
@@ -87,6 +89,7 @@ struct Cartridge {
     void writePrg(std::uint16_t address, std::uint8_t value);
     std::uint8_t readChr(std::uint16_t address) const;
     std::uint8_t readMmc5ExtendedChr(std::uint16_t address, std::uint8_t bank) const;
+    std::uint8_t readMmc5SplitChr(std::uint16_t address) const;
     void writeChr(std::uint16_t address, std::uint8_t value);
 };
 
