@@ -94,6 +94,7 @@ std::uint8_t NESBus::read(std::uint16_t address) {
     if (address < 0x8000 && cartridge != nullptr && cartridge->mapper == 40)
         return cartridge->readPrg(address);
     if (address < 0x8000) {
+        if (cartridge != nullptr && cartridge->mapper == 5) return cartridge->readPrg(address);
         if (cartridge != nullptr && !cartridge->prgRamEnabled()) return 0;
         return prgRam[address - 0x6000];
     }
@@ -122,7 +123,7 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
                address == 0x4015 || address == 0x4017) {
         apu.write(address, value);
     } else if (address >= 0x6000 && address < 0x8000) {
-        if (cartridge != nullptr && cartridge->mapper == 40) return;
+        if (cartridge != nullptr && (cartridge->mapper == 40 || cartridge->mapper == 5)) { cartridge->writePrg(address, value); return; }
         if (cartridge == nullptr || cartridge->prgRamWritable())
             prgRam[address - 0x6000] = value;
     } else if (address >= 0x8000 && cartridge != nullptr) {
