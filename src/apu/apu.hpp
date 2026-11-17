@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 class NESAPU {
@@ -27,10 +28,19 @@ public:
         bool enabled = false, mode = false, constantVolume = false;
         bool envelopeLoop = false, envelopeStart = false;
     };
+    struct DmcState {
+        std::uint16_t currentAddress = 0xC000, bytesRemaining = 0;
+        std::uint16_t sampleAddress = 0xC000, sampleLength = 1, timerCounter = 0;
+        std::uint8_t rateIndex = 0, outputLevel = 0, sampleBuffer = 0;
+        std::uint8_t shiftRegister = 0, bitsRemaining = 8;
+        bool enabled = false, irqEnabled = false, loop = false, irq = false;
+        bool sampleBufferEmpty = true, silence = true;
+    };
     struct State {
         PulseState pulse1{}, pulse2{};
         TriangleState triangle{};
         NoiseState noise{};
+        DmcState dmc{};
         std::uint32_t frameCycle = 0;
         std::uint32_t sampleAccumulator = 0;
         bool fiveStep = false, irqInhibit = false, frameIrq = false;
@@ -40,7 +50,8 @@ public:
     void reset();
     void write(std::uint16_t address, std::uint8_t value);
     std::uint8_t readStatus();
-    void clock();
+    void clock(const std::function<std::uint8_t(std::uint16_t)>& readMemory);
+    bool irqPending() const { return state.frameIrq || state.dmc.irq; }
     State saveState() const { return state; }
     void loadState(const State& saved);
     std::vector<std::int16_t> takeSamples();
@@ -58,6 +69,7 @@ private:
     void clockTriangleTimer();
     void clockNoiseTimer();
     double mixedOutput() const;
+    void clockDmc(const std::function<std::uint8_t(std::uint16_t)>& readMemory);
     std::uint8_t pulseOutput(const PulseState& pulse) const;
     static std::uint8_t lengthValue(std::uint8_t index);
 };
