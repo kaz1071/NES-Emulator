@@ -78,6 +78,7 @@ std::uint8_t NESBus::read(std::uint16_t address) {
     if (address < 0x2000) return ram[address & 0x07FF];
     if (address < 0x4000) return ppu.cpuRead(address);
     if (address == 0x4015) return apu.readStatus();
+    if (address == 0x5015 && cartridge != nullptr && cartridge->mapper == 5) return apu.readMmc5Status();
     if (address == 0x4016 || address == 0x4017) {
         const std::size_t port = address - 0x4016;
         if (controllerStrobe) controllerShift[port] = controllerState[port];
@@ -127,7 +128,8 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
                address == 0x4015 || address == 0x4017) {
         apu.write(address, value);
     } else if (address >= 0x5000 && address < 0x6000 && cartridge != nullptr && cartridge->mapper == 5) {
-        cartridge->writePrg(address, value);
+        if ((address >= 0x5000 && address <= 0x5007) || address == 0x5015) apu.writeMmc5(address, value);
+        else cartridge->writePrg(address, value);
     } else if (address >= 0x6000 && address < 0x8000) {
         if (cartridge != nullptr && (cartridge->mapper == 40 || cartridge->mapper == 5)) { cartridge->writePrg(address, value); return; }
         if (cartridge == nullptr || cartridge->prgRamWritable())
