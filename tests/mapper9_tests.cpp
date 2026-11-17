@@ -1,7 +1,8 @@
 #include "cartridge.hpp"
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
-static void check(bool ok, const char* msg) { if (!ok) { std::cerr << "FAIL: " << msg << '\\n'; std::exit(1); } }
+static void check(bool ok, const char* msg) { if (!ok) { std::cerr << "FAIL: " << msg << '\n'; std::exit(1); } }
 int main() {
     Cartridge c; c.mapper=9; c.prgRom.resize(8*0x2000);
     for (std::size_t b=0;b<8;++b) std::fill(c.prgRom.begin()+b*0x2000,c.prgRom.begin()+(b+1)*0x2000,static_cast<std::uint8_t>(0x10+b));
@@ -18,5 +19,5 @@ int main() {
     const auto state=c.saveState(); c.readChr(0x0FD8); c.writePrg(0xA000,1);
     check(c.loadState(state),"state restores");
     check(c.readPrg(0x8000)==0x13 && c.readChr(0)==0x42 && c.readChr(0x1000)==0x44,"banks and latches restored");
-    std::cout<<"Mapper 9 tests passed\\n";
+    std::cout<<"Mapper 9 tests passed\n";
 }
