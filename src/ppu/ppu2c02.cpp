@@ -122,6 +122,42 @@ PPUBackgroundDebugInfo PPU2C02::debugBackgroundInfo(int x, int y) const {
     info.finePixelX = static_cast<std::uint8_t>(pixelX & 7);
     info.finePixelY = static_cast<std::uint8_t>((info.scrollAddress >> 12) & 7);
 
+    const bool splitEnabled = cartridge != nullptr && cartridge->mapper == 5 &&
+        (cartridge->mmc5VerticalSplit & 0x80) != 0 &&
+        cartridge->mmc5ExRamMode <= 1 &&
+        (lineMask[line] & 0x18) != 0;
+    const int splitTileX = (pixelX / 8) & 31;
+    const int splitThreshold = cartridge != nullptr
+        ? static_cast<int>(cartridge->mmc5VerticalSplit & 0x1F) : 32;
+    const bool splitOnRight = cartridge != nullptr &&
+        (cartridge->mmc5VerticalSplit & 0x40) != 0;
+    const bool inSplitRegion = splitEnabled &&
+        (splitOnRight ? splitTileX >= splitThreshold : splitTileX < splitThreshold);
+    if (inSplitRegion) {
+        const int splitY = (static_cast<int>(cartridge->mmc5VerticalSplitScroll) + y) & 0xFF;
+        const int splitTileY = splitY / 8;
+        const int splitFineY = splitY & 7;
+        info.tileX = static_cast<std::uint8_t>(splitTileX);
+        info.tileY = static_cast<std::uint8_t>(splitTileY);
+        info.finePixelY = static_cast<std::uint8_t>(splitFineY);
+        info.tile = cartridge->mmc5ExRam[
+            (static_cast<std::size_t>(splitTileY) * 32 + splitTileX) & 0x3FF];
+        const std::uint16_t splitPattern = static_cast<std::uint16_t>(
+            info.tile * 16 + splitFineY);
+        const int bit = 7 - info.finePixelX;
+        const std::uint8_t low = cartridge->readMmc5SplitChr(splitPattern);
+        const std::uint8_t high = cartridge->readMmc5SplitChr(
+            static_cast<std::uint16_t>(splitPattern + 8));
+        info.pixel = static_cast<std::uint8_t>(
+            ((low >> bit) & 1) | (((high >> bit) & 1) << 1));
+        const std::size_t attrAddress = 0x3C0 +
+            static_cast<std::size_t>(splitTileY / 4) * 8 +
+            static_cast<std::size_t>(splitTileX / 4);
+        const std::uint8_t attribute = cartridge->mmc5ExRam[attrAddress & 0x3FF];
+        const int shift = ((splitTileY & 2) ? 4 : 0) + ((splitTileX & 2) ? 2 : 0);
+        info.palette = static_cast<std::uint8_t>((attribute >> shift) & 3);
+        return info;
+    }
     const std::uint16_t tableBase = static_cast<std::uint16_t>(
         0x2000 + (info.tableY * 2 + info.tableX) * 0x400);
     info.tile = ppuRead(static_cast<std::uint16_t>(
@@ -169,6 +205,48 @@ std::uint8_t PPU2C02::backgroundPixelAt(
     const int fineY = (scroll >> 12) & 7;
     const int pixelX = static_cast<int>(lineFineX[static_cast<std::size_t>(y)]) + x;
     const int tileOffsetX = coarseX + pixelX / 8;
+    const bool mmc5SplitActive = cartridge != nullptr && cartridge->mapper == 5 &&
+        (cartridge->mmc5VerticalSplit & 0x80) != 0 &&
+        cartridge->mmc5ExRamMode <= 1 &&
+        (lineMask[static_cast<std::size_t>(y)] & 0x18) != 0;
+    const int splitTileX = (pixelX / 8) & 31;
+    const int splitThreshold = cartridge != nullptr
+        ? static_cast<int>(cartridge->mmc5VerticalSplit & 0x1F) : 32;
+    const bool splitOnRight = cartridge != nullptr &&
+        (cartridge->mmc5VerticalSplit & 0x40) != 0;
+    const bool inSplitRegion = mmc5SplitActive &&
+        (splitOnRight ? splitTileX >= splitThreshold : splitTileX < splitThreshold);
+    if (inSplitRegion) {
+        // The split region has its own vertical origin and a dedicated 4 KiB CHR bank.
+        // ExRAM supplies the tile map and its conventional attribute-table bytes.
+        const int splitY = (static_cast<int>(cartridge->mmc5VerticalSplitScroll) + y) & 0xFF;
+        const int splitTileY = splitY / 8;
+        const int splitFineY = splitY & 7;
+        const std::size_t exramTileAddress =
+            static_cast<std::size_t>(splitTileY) * 32 + splitTileX;
+        const std::uint8_t splitTile = cartridge->mmc5ExRam[exramTileAddress & 0x3FF];
+        const std::uint16_t splitPattern = static_cast<std::uint16_t>(
+            splitTile * 16 + splitFineY);
+        const int bit = 7 - (pixelX & 7);
+        const std::uint8_t splitLow = cartridge->readMmc5SplitChr(splitPattern);
+        const std::uint8_t splitHigh = cartridge->readMmc5SplitChr(
+            static_cast<std::uint16_t>(splitPattern + 8));
+        const std::uint8_t splitPixel = static_cast<std::uint8_t>(
+            ((splitLow >> bit) & 1) | (((splitHigh >> bit) & 1) << 1));
+        if (splitPixel == 0) return 0;
+        const std::size_t attributeAddress = 0x3C0 +
+            static_cast<std::size_t>(splitTileY / 4) * 8 +
+            static_cast<std::size_t>(splitTileX / 4);
+        const std::uint8_t attribute = cartridge->mmc5ExRam[attributeAddress & 0x3FF];
+        const int attributeShift = ((splitTileY & 2) ? 4 : 0) +
+                                   ((splitTileX & 2) ? 2 : 0);
+        const std::uint8_t splitPalette = static_cast<std::uint8_t>(
+            (attribute >> attributeShift) & 3);
+        if (paletteSlot != nullptr)
+            *paletteSlot = static_cast<std::uint8_t>(splitPalette * 4 + splitPixel);
+        return splitPixel;
+    }
+
     const int tableX = (baseTableX + tileOffsetX / 32) & 1;
     const int tileX = tileOffsetX & 31;
     const int tileY = coarseY;
