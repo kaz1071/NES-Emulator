@@ -285,7 +285,7 @@ void NESAPU::clockDmc() {
         --d.timerCounter;
     }
 
-    if (d.sampleBufferEmpty && d.bytesRemaining > 0 && !d.dmaPending) {
+    if (d.sampleBufferEmpty && d.bytesRemaining > 0 && !d.dmaPending && !d.dmaInProgress) {
         d.dmaAddress = d.currentAddress;
         d.dmaPending = true;
     }
@@ -333,11 +333,13 @@ bool NESAPU::consumeDmcDmaRequest(std::uint16_t& address) {
     if (!d.dmaPending) return false;
     address = d.dmaAddress;
     d.dmaPending = false;
+    d.dmaInProgress = true;
     return true;
 }
 
 void NESAPU::completeDmcDma(std::uint8_t value) {
     auto& d = state.dmc;
+    d.dmaInProgress = false;
     if (!d.sampleBufferEmpty || d.bytesRemaining == 0) return;
     d.sampleBuffer = value;
     d.sampleBufferEmpty = false;
