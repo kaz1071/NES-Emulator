@@ -35,7 +35,7 @@ public:
         std::uint8_t shiftRegister = 0, bitsRemaining = 8;
         bool enabled = false, irqEnabled = false, loop = false, irq = false;
         bool sampleBufferEmpty = true, silence = true;
-        bool dmaPending = false;
+        bool dmaPending = false, dmaInProgress = false;
         std::uint16_t dmaAddress = 0;
     };
     struct State {
