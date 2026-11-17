@@ -387,6 +387,16 @@ std::uint8_t Cartridge::readChr(std::uint16_t address) const {
     return chrData[offset % chrData.size()];
 }
 
+std::uint8_t Cartridge::readMmc5ExtendedChr(std::uint16_t address, std::uint8_t bank) const {
+    if (mapper != 5 || chrData.empty()) return readChr(address);
+    const std::size_t count = chrData.size() / 0x1000;
+    if (count == 0) return 0;
+    const std::size_t selected = ((static_cast<std::size_t>(mmc5ChrHigh & 3) << 6) |
+                                  (bank & 0x3F)) % count;
+    const std::size_t offset = selected * 0x1000 + (address & 0x0FFF);
+    return chrData[offset % chrData.size()];
+}
+
 void Cartridge::writeChr(std::uint16_t address, std::uint8_t value) {
     if (!usesChrRam || address >= 0x2000 || chrData.empty()) return;
     std::size_t offset = address;
