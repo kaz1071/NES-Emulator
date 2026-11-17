@@ -15,6 +15,7 @@ NESBus::State NESBus::saveState() const {
     state.oamDmaPending = oamDmaPending;
     state.oamDmaPage = oamDmaPage;
     state.ppu = ppu.saveState();
+    state.apu = apu.saveState();
     if (cartridge != nullptr) state.cartridge = cartridge->saveState();
     return state;
 }
@@ -29,6 +30,7 @@ bool NESBus::loadState(const State& state) {
     oamDmaPending = state.oamDmaPending;
     oamDmaPage = state.oamDmaPage;
     ppu.loadState(state.ppu);
+    apu.loadState(state.apu);
     return true;
 }
 
@@ -41,6 +43,7 @@ void NESBus::reset() {
     oamDmaPending = false;
     oamDmaPage = 0;
     ppu.reset();
+    apu.reset();
 }
 
 void NESBus::clockPpu() {
@@ -49,6 +52,11 @@ void NESBus::clockPpu() {
 
 void NESBus::clockCpuCycle() {
     if (cartridge != nullptr) cartridge->clockCpuCycle();
+    apu.clock();
+}
+
+std::vector<std::int16_t> NESBus::takeAudioSamples() {
+    return apu.takeSamples();
 }
 
 bool NESBus::consumeNmi() {
@@ -69,6 +77,7 @@ void NESBus::setControllerState(std::uint8_t port, std::uint8_t buttons) {
 std::uint8_t NESBus::read(std::uint16_t address) {
     if (address < 0x2000) return ram[address & 0x07FF];
     if (address < 0x4000) return ppu.cpuRead(address);
+    if (address == 0x4015) return apu.readStatus();
     if (address == 0x4016 || address == 0x4017) {
         const std::size_t port = address - 0x4016;
         if (controllerStrobe) controllerShift[port] = controllerState[port];
@@ -109,6 +118,9 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
             controllerShift = controllerState;
         }
         controllerStrobe = nextStrobe;
+    } else if ((address >= 0x4000 && address <= 0x4013) ||
+               address == 0x4015 || address == 0x4017) {
+        apu.write(address, value);
     } else if (address >= 0x6000 && address < 0x8000) {
         if (cartridge != nullptr && cartridge->mapper == 40) return;
         if (cartridge == nullptr || cartridge->prgRamWritable())
