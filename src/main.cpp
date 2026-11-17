@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -644,6 +645,38 @@ int main(int argc, char** argv) {
         SDL_Event event{};
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) running = false;
+            if (event.type == SDL_KEYDOWN && event.key.repeat == 0 &&
+                event.key.keysym.sym == SDLK_t) {
+                if (audioDevice == 0) {
+                    std::cerr << "Audio test: no SDL output device is open.\\n";
+                } else {
+                    // A short on-demand tone can be triggered after the window
+                    // is visible, avoiding the startup-only test being missed.
+                    constexpr double testDuration = 0.12;
+                    constexpr double testFrequency = 660.0;
+                    constexpr double testAmplitude = 18000.0;
+                    const int rate = audioHave.freq > 0 ? audioHave.freq : 44100;
+                    const std::size_t count = static_cast<std::size_t>(rate * testDuration);
+                    std::vector<std::int16_t> tone(count);
+                    for (std::size_t i = 0; i < count; ++i) {
+                        const double phase = 2.0 * 3.14159265358979323846 *
+                            testFrequency * static_cast<double>(i) / rate;
+                        tone[i] = static_cast<std::int16_t>(testAmplitude * std::sin(phase));
+                    }
+                    SDL_ClearQueuedAudio(audioDevice);
+                    if (SDL_QueueAudio(audioDevice, tone.data(),
+                            static_cast<Uint32>(tone.size() * sizeof(std::int16_t))) == 0) {
+                        std::cerr << "Audio test: queued 660 Hz tone; backend="
+                                  << (SDL_GetCurrentAudioDriver() ?
+                                      SDL_GetCurrentAudioDriver() : "(unknown)")
+                                  << ", queued bytes="
+                                  << SDL_GetQueuedAudioSize(audioDevice) << '\\n';
+                    } else {
+                        std::cerr << "Audio test queue failed: " << SDL_GetError() << '\\n';
+                    }
+                }
+            }
+
             if (event.type == SDL_KEYDOWN && event.key.repeat == 0 &&
                 event.key.keysym.sym == SDLK_0) {
                 const Uint32 mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
