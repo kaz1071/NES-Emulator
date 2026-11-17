@@ -503,11 +503,16 @@ int main(int argc, char** argv) {
     audioWant.format = AUDIO_S16SYS;
     audioWant.channels = 1;
     audioWant.samples = 1024;
-    SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioWant, nullptr, 0);
-    if (audioDevice == 0)
+    SDL_AudioSpec audioHave{};
+    SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioWant, &audioHave, 0);
+    if (audioDevice == 0) {
         std::cerr << "Audio device unavailable: " << SDL_GetError() << '\n';
-    else
+    } else {
+        std::cout << "Audio device opened: " << audioHave.freq << " Hz, "
+                  << static_cast<int>(audioHave.channels) << " channel(s), format=0x"
+                  << std::hex << audioHave.format << std::dec << '\n';
         SDL_PauseAudioDevice(audioDevice, 0);
+    }
 
     SDL_Window* window = SDL_CreateWindow(windowTitle.c_str(), SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
@@ -539,6 +544,9 @@ int main(int argc, char** argv) {
     std::array<std::uint32_t, NES_WIDTH * NES_HEIGHT> frame{};
     Uint32 lastCpuDiagnostic = SDL_GetTicks();
     std::uint64_t instructionsSinceDiagnostic = 0;
+    std::uint64_t audioSamplesSubmitted = 0;
+    int audioPeakSinceDiagnostic = 0;
+    Uint32 lastAudioDiagnostic = SDL_GetTicks();
 
     // An NTSC frame is 89,342 PPU dots. CPU bus accesses now advance
     // the PPU by three dots each; carry the fractional frame remainder
@@ -773,8 +781,15 @@ int main(int argc, char** argv) {
                 constexpr Uint32 MAX_QUEUED_AUDIO = 44100 * sizeof(std::int16_t) / 5;
                 if (SDL_GetQueuedAudioSize(audioDevice) > MAX_QUEUED_AUDIO)
                     SDL_ClearQueuedAudio(audioDevice);
-                SDL_QueueAudio(audioDevice, audioSamples.data(),
+                for (const std::int16_t sample : audioSamples)
+                    audioPeakSinceDiagnostic = std::max(
+                        audioPeakSinceDiagnostic, std::abs(static_cast<int>(sample)));
+                const int queueResult = SDL_QueueAudio(audioDevice, audioSamples.data(),
                     static_cast<Uint32>(audioSamples.size() * sizeof(std::int16_t)));
+                if (queueResult == 0)
+                    audioSamplesSubmitted += audioSamples.size();
+                else
+                    std::cerr << "Audio queue failed: " << SDL_GetError() << '\n';
             }
         } else {
             // Discard samples while in menus or rewinding; never replay stale sound.
@@ -784,6 +799,16 @@ int main(int argc, char** argv) {
         bus.renderFrame(frame);
 
         const Uint32 diagnosticNow = SDL_GetTicks();
+        if (hasCartridge && diagnosticNow - lastAudioDiagnostic >= 2000) {
+            std::cout << "Audio debug: samples queued/2s=" << audioSamplesSubmitted
+                      << " peak=" << audioPeakSinceDiagnostic
+                      << " SDL queue bytes="
+                      << (audioDevice != 0 ? SDL_GetQueuedAudioSize(audioDevice) : 0)
+                      << '\n';
+            audioSamplesSubmitted = 0;
+            audioPeakSinceDiagnostic = 0;
+            lastAudioDiagnostic = diagnosticNow;
+        }
         if (showDebugOutput && hasCartridge &&
             diagnosticNow - lastCpuDiagnostic >= 2000) {
             // Keep optional diagnostics compact so terminal output cannot overwhelm
