@@ -5,7 +5,7 @@ A custom NES emulator built from scratch in C++ using SDL2, designed for Linux. 
 The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), MMC5 (mapper 5, PRG/CHR banking), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
 
 
-### MMC5 PRG and CHR banking (0.45.0)
+### MMC5 PRG, CHR, and multiplier support (0.46.0)
 
 - Implements all four MMC5 PRG banking modes selected by `$5100`: 32 KiB, 16 KiB, mixed 16/8 KiB, and four independent 8 KiB windows.
 - Supports banked PRG-RAM at `$6000-$7FFF` through `$5113`, plus RAM-selected windows in the upper PRG area.
@@ -13,7 +13,8 @@ The project is in early development. It currently includes an SDL2 application, 
 - Enforces the `$5102/$5103` PRG-RAM write-protection sequence.
 - Implements the MMC5 8 KiB, 4 KiB, 2 KiB, and 1 KiB CHR banking modes.
 - Separates background CHR registers (`$5128-$512B`) from sprite CHR registers (`$5120-$5127`).
-- Adds regression tests for PRG/CHR bank alignment, banked RAM, write protection, independent background/sprite banks, and save-state restoration.
+- Implements the hardware multiplier at `$5205/$5206`, including save-state support.
+- Adds regression tests for PRG/CHR banking, banked RAM, write protection, multiplier results, and save-state restoration.
 
 ## Current status
 
