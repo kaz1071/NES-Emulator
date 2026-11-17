@@ -52,7 +52,7 @@ void NESBus::clockPpu() {
 
 void NESBus::clockCpuCycle() {
     if (cartridge != nullptr) cartridge->clockCpuCycle();
-    apu.clock();
+    apu.clock([this](std::uint16_t address) { return read(address); });
 }
 
 std::vector<std::int16_t> NESBus::takeAudioSamples() {
@@ -64,7 +64,7 @@ bool NESBus::consumeNmi() {
 }
 
 bool NESBus::irqPending() const {
-    return cartridge != nullptr && cartridge->irqPending();
+    return apu.irqPending() || (cartridge != nullptr && cartridge->irqPending());
 }
 
 void NESBus::setControllerState(std::uint8_t port, std::uint8_t buttons) {
