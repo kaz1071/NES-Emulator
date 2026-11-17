@@ -536,6 +536,25 @@ int main(int argc, char** argv) {
                       << " channel(s), format=0x" << std::hex << audioHave.format
                       << std::dec << ", device=" << audioDevice << '\n';
             SDL_PauseAudioDevice(audioDevice, 0);
+
+            // Play a short startup reference tone. This verifies the complete
+            // SDL device -> host audio path independently of NES/APU emulation.
+            std::vector<std::int16_t> audioTestTone(4410);
+            constexpr double testToneFrequency = 440.0;
+            constexpr double testToneAmplitude = 7000.0;
+            for (std::size_t sample = 0; sample < audioTestTone.size(); ++sample) {
+                const double phase = 2.0 * 3.14159265358979323846 *
+                    testToneFrequency * static_cast<double>(sample) / 44100.0;
+                audioTestTone[sample] = static_cast<std::int16_t>(
+                    testToneAmplitude * std::sin(phase));
+            }
+            if (SDL_QueueAudio(audioDevice, audioTestTone.data(),
+                    static_cast<Uint32>(audioTestTone.size() * sizeof(std::int16_t))) != 0) {
+                std::cerr << "Audio: startup test tone queue failed: "
+                          << SDL_GetError() << '\\n';
+            } else {
+                std::cerr << "Audio: queued 440 Hz startup test tone.\\n";
+            }
         }
     }
     if (audioDevice == 0) {
