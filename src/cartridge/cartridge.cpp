@@ -54,6 +54,11 @@ CartridgeState Cartridge::saveState() const {
     state.mmc5VerticalSplit = mmc5VerticalSplit;
     state.mmc5VerticalSplitScroll = mmc5VerticalSplitScroll;
     state.mmc5VerticalSplitBank = mmc5VerticalSplitBank;
+    state.mmc5IrqCompare = mmc5IrqCompare;
+    state.mmc5IrqScanline = mmc5IrqScanline;
+    state.mmc5IrqEnabled = mmc5IrqEnabled;
+    state.mmc5IrqPending = mmc5IrqPending;
+    state.mmc5InFrame = mmc5InFrame;
     state.usesChrRam = usesChrRam;
     if (usesChrRam) {
         const std::size_t count = std::min(chrData.size(), state.chrRam.size());
@@ -101,6 +106,11 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mmc5VerticalSplit = state.mmc5VerticalSplit;
     mmc5VerticalSplitScroll = state.mmc5VerticalSplitScroll;
     mmc5VerticalSplitBank = state.mmc5VerticalSplitBank;
+    mmc5IrqCompare = state.mmc5IrqCompare;
+    mmc5IrqScanline = state.mmc5IrqScanline;
+    mmc5IrqEnabled = state.mmc5IrqEnabled;
+    mmc5IrqPending = state.mmc5IrqPending;
+    mmc5InFrame = state.mmc5InFrame;
     if (usesChrRam) {
         const std::size_t count = std::min(chrData.size(), state.chrRam.size());
         std::copy_n(state.chrRam.begin(), count, chrData.begin());
@@ -133,7 +143,8 @@ bool Cartridge::prgRamWritable() const {
 
 bool Cartridge::irqPending() const {
     return (mapper == 4 && mmc3IrqPending) ||
-           (mapper == 40 && mapper40IrqPending);
+           (mapper == 40 && mapper40IrqPending) ||
+           (mapper == 5 && mmc5IrqEnabled && mmc5IrqPending);
 }
 
 void Cartridge::clockCpuCycle() {
@@ -146,7 +157,24 @@ void Cartridge::clockCpuCycle() {
     }
 }
 
-void Cartridge::clockScanline() {
+void Cartridge::clockScanline(bool rendering) {
+    if (mapper == 5) {
+        if (!rendering) {
+            endMmc5Frame();
+            return;
+        }
+        if (!mmc5InFrame) {
+            mmc5InFrame = true;
+            mmc5IrqScanline = 0;
+            mmc5IrqPending = false;
+        } else if (mmc5IrqScanline < 0xFF) {
+            ++mmc5IrqScanline;
+        }
+        if (mmc5IrqCompare != 0 && mmc5IrqCompare < 240 &&
+            mmc5IrqScanline == mmc5IrqCompare)
+            mmc5IrqPending = true;
+        return;
+    }
     if (mapper != 4) return;
     if (mmc3IrqCounter == 0 || mmc3IrqReload) {
         mmc3IrqCounter = mmc3IrqLatch;
@@ -157,8 +185,23 @@ void Cartridge::clockScanline() {
     if (mmc3IrqCounter == 0 && mmc3IrqEnabled) mmc3IrqPending = true;
 }
 
-std::uint8_t Cartridge::readPrg(std::uint16_t address) const {
+void Cartridge::endMmc5Frame() {
+    if (mapper != 5) return;
+    mmc5InFrame = false;
+    mmc5IrqScanline = 0;
+    mmc5IrqPending = false;
+}
+
+std::uint8_t Cartridge::readPrg(std::uint16_t address) {
     if (mapper == 5) {
+        if (address == 0x5204) {
+            const std::uint8_t value = static_cast<std::uint8_t>(
+                (mmc5IrqPending ? 0x80 : 0) | (mmc5InFrame ? 0x40 : 0));
+            mmc5IrqPending = false;
+            return value;
+        }
+        if (address == 0x5200 || address == 0x5201 || address == 0x5202 || address == 0x5203)
+            return 0;
         if (address >= 0x5C00 && address < 0x6000) return mmc5ExRam[address & 0x03FF];
         if (address >= 0x6000 && address < 0x8000)
             return mmc5PrgRam[address & 0x1FFF];
@@ -249,6 +292,8 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
         if (address == 0x5200) { mmc5VerticalSplit = value; return; }
         if (address == 0x5201) { mmc5VerticalSplitScroll = value; return; }
         if (address == 0x5202) { mmc5VerticalSplitBank = value; return; }
+        if (address == 0x5203) { mmc5IrqCompare = value; return; }
+        if (address == 0x5204) { mmc5IrqEnabled = (value & 0x80) != 0; return; }
         if (address >= 0x5113 && address <= 0x5117) {
             mmc5PrgRegisters[address - 0x5113] = value;
             return;
