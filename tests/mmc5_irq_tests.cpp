@@ -29,6 +29,9 @@ int main() {
     expect(cartridge.readPrg(0x5204) == 0x40,
            "$5204 keeps in-frame status after acknowledgement");
 
+    // Start a fresh frame before checking a nonzero compare target.
+    cartridge.endMmc5Frame();
+
     // A nonzero compare is reached on the matching visible scanline.
     cartridge.writePrg(0x5203, 2);
     cartridge.clockScanline(true); // scanline 0 of the next frame
