@@ -39,6 +39,7 @@ public:
         std::uint16_t dmaAddress = 0;
     };
     struct State {
+        std::array<PulseState, 2> mmc5Pulse{};
         PulseState pulse1{}, pulse2{};
         TriangleState triangle{};
         NoiseState noise{};
@@ -53,6 +54,8 @@ public:
 
     void reset();
     void write(std::uint16_t address, std::uint8_t value);
+    void writeMmc5(std::uint16_t address, std::uint8_t value);
+    std::uint8_t readMmc5Status() const;
     std::uint8_t readStatus();
     void clock();
     bool consumeDmcDmaRequest(std::uint16_t& address);
@@ -72,10 +75,12 @@ private:
     void clockEnvelope(NoiseState& noise);
     void clockSweep(PulseState& pulse, bool first);
     void clockPulseTimer(PulseState& pulse);
+    void clockMmc5Pulse(PulseState& pulse);
     void clockTriangleTimer();
     void clockNoiseTimer();
     double mixedOutput() const;
     void clockDmc();
     std::uint8_t pulseOutput(const PulseState& pulse) const;
+    std::uint8_t mmc5PulseOutput(const PulseState& pulse) const;
     static std::uint8_t lengthValue(std::uint8_t index);
 };
