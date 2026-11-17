@@ -130,11 +130,12 @@ void NESAPU::write(std::uint16_t address, std::uint8_t value) {
         state.frameIrq = false;
         break;
     case 0x4017:
-        state.fiveStep = (value & 0x80) != 0;
+        // The mode/sequence reset takes effect 3 or 4 CPU cycles after
+        // the write. IRQ inhibit, however, takes effect immediately.
+        state.pendingFiveStep = (value & 0x80) != 0;
         state.irqInhibit = (value & 0x40) != 0;
         if (state.irqInhibit) state.frameIrq = false;
-        state.frameCycle = 0;
-        if (state.fiveStep) { quarterFrame(); halfFrame(); }
+        state.frameResetDelay = state.evenCycle ? 3 : 4;
         break;
     default: break;
     }
@@ -301,16 +302,31 @@ void NESAPU::clock() {
     clockTriangleTimer();
     clockDmc();
 
-    ++state.frameCycle;
-    if (state.frameCycle == 3729 || state.frameCycle == 11186) quarterFrame();
-    if (state.frameCycle == 7457) { quarterFrame(); halfFrame(); }
-    if (!state.fiveStep && state.frameCycle >= 14915) {
-        quarterFrame(); halfFrame();
-        if (!state.irqInhibit) state.frameIrq = true;
+    if (state.frameResetDelay > 0 && --state.frameResetDelay == 0) {
+        state.fiveStep = state.pendingFiveStep;
         state.frameCycle = 0;
-    } else if (state.fiveStep && state.frameCycle >= 18641) {
-        quarterFrame(); halfFrame();
-        state.frameCycle = 0;
+        if (state.fiveStep) {
+            quarterFrame();
+            halfFrame();
+        }
+    } else {
+        ++state.frameCycle;
+        if (state.frameCycle == 3729 || state.frameCycle == 11186)
+            quarterFrame();
+        if (state.frameCycle == 7457) {
+            quarterFrame();
+            halfFrame();
+        }
+        if (!state.fiveStep && state.frameCycle >= 14915) {
+            quarterFrame();
+            halfFrame();
+            if (!state.irqInhibit) state.frameIrq = true;
+            state.frameCycle = 0;
+        } else if (state.fiveStep && state.frameCycle >= 18641) {
+            quarterFrame();
+            halfFrame();
+            state.frameCycle = 0;
+        }
     }
 
     state.sampleAccumulator += SAMPLE_RATE;
