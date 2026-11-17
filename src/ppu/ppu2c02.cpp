@@ -173,10 +173,13 @@ PPUBackgroundDebugInfo PPU2C02::debugBackgroundInfo(int x, int y) const {
     const int bit = 7 - info.finePixelX;
     const std::uint8_t low = extended
         ? cartridge->readMmc5ExtendedChr(pattern, extendedAttribute & 0x3F)
-        : ppuRead(pattern);
+        : (cartridge != nullptr && cartridge->mapper == 5
+            ? cartridge->readMmc5Chr(pattern, true) : ppuRead(pattern));
     const std::uint8_t high = extended
         ? cartridge->readMmc5ExtendedChr(static_cast<std::uint16_t>(pattern + 8), extendedAttribute & 0x3F)
-        : ppuRead(static_cast<std::uint16_t>(pattern + 8));
+        : (cartridge != nullptr && cartridge->mapper == 5
+            ? cartridge->readMmc5Chr(static_cast<std::uint16_t>(pattern + 8), true)
+            : ppuRead(static_cast<std::uint16_t>(pattern + 8)));
     info.pixel = static_cast<std::uint8_t>(
         ((low >> bit) & 1) | (((high >> bit) & 1) << 1));
 
@@ -330,9 +333,11 @@ void PPU2C02::updateSpriteZeroHit() {
             ((scanlineControl & 0x08) ? 0x1000 : 0) + tile * 16 + sourceY);
     }
     const int spriteBit = 7 - sourceX;
-    const std::uint8_t spriteLow = ppuRead(spritePattern);
-    const std::uint8_t spriteHigh = ppuRead(
-        static_cast<std::uint16_t>(spritePattern + 8));
+    const std::uint8_t spriteLow = cartridge != nullptr && cartridge->mapper == 5
+        ? cartridge->readMmc5Chr(spritePattern, false) : ppuRead(spritePattern);
+    const std::uint16_t spriteHighAddress = static_cast<std::uint16_t>(spritePattern + 8);
+    const std::uint8_t spriteHigh = cartridge != nullptr && cartridge->mapper == 5
+        ? cartridge->readMmc5Chr(spriteHighAddress, false) : ppuRead(spriteHighAddress);
     const std::uint8_t spritePixel = static_cast<std::uint8_t>(
         ((spriteLow >> spriteBit) & 1) |
         (((spriteHigh >> spriteBit) & 1) << 1));
@@ -742,8 +747,11 @@ void PPU2C02::renderScanline(int y) {
                 ((scanlineControl & 0x08) ? 0x1000 : 0) +
                 tile * 16 + sourceY);
         }
-        const std::uint8_t low = ppuRead(pattern);
-        const std::uint8_t high = ppuRead(static_cast<std::uint16_t>(pattern + 8));
+        const std::uint8_t low = cartridge != nullptr && cartridge->mapper == 5
+            ? cartridge->readMmc5Chr(pattern, false) : ppuRead(pattern);
+        const std::uint16_t highAddress = static_cast<std::uint16_t>(pattern + 8);
+        const std::uint8_t high = cartridge != nullptr && cartridge->mapper == 5
+            ? cartridge->readMmc5Chr(highAddress, false) : ppuRead(highAddress);
         for (int col = 0; col < 8; ++col) {
             const int px = sx + col;
             if (px < 0 || px >= 256 ||
