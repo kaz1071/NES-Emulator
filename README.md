@@ -31,7 +31,8 @@ The project is in early development. It currently includes an SDL2 application, 
 - [ ] Full 6502 instruction and cycle support
 - [ ] Accurate PPU frame timing and cycle-level CPU timing
 - [x] Basic NES controller 1 input (keyboard-mapped)
-- [x] Initial NES APU audio: pulse, triangle, and noise channels mixed to SDL2 output\n- [ ] DMC sample playback and cycle-accurate APU timing
+- [x] Initial NES APU audio: pulse, triangle, and noise channels mixed to SDL2 output
+- [ ] DMC sample playback and cycle-accurate APU timing
 - [ ] Additional cartridge mappers
 
 ## Build on Linux
