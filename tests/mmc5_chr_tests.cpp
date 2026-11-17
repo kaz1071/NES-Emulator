@@ -61,6 +61,7 @@ int main() {
 
     // Background CHR registers are independent from sprite CHR registers.
     cartridge.writePrg(0x5101, 3);
+    cartridge.writePrg(0x5120, 8);
     cartridge.writePrg(0x5128, 2);
     cartridge.writePrg(0x5129, 4);
     cartridge.writePrg(0x512A, 6);
