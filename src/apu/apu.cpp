@@ -262,7 +262,7 @@ double NESAPU::mixedOutput() const {
     return std::clamp(pulse + tnd + dmc, 0.0, 1.0);
 }
 
-void NESAPU::clockDmc(const std::function<std::uint8_t(std::uint16_t)>& readMemory) {
+void NESAPU::clockDmc() {
     auto& d = state.dmc;
     if (d.timerCounter == 0) {
         d.timerCounter = static_cast<std::uint16_t>(DMC_PERIODS[d.rateIndex] - 1);
@@ -285,24 +285,13 @@ void NESAPU::clockDmc(const std::function<std::uint8_t(std::uint16_t)>& readMemo
         --d.timerCounter;
     }
 
-    if (d.sampleBufferEmpty && d.bytesRemaining > 0) {
-        d.sampleBuffer = readMemory(d.currentAddress);
-        d.sampleBufferEmpty = false;
-        d.currentAddress = d.currentAddress == 0xFFFF
-            ? 0x8000 : static_cast<std::uint16_t>(d.currentAddress + 1);
-        --d.bytesRemaining;
-        if (d.bytesRemaining == 0) {
-            if (d.loop) {
-                d.currentAddress = d.sampleAddress;
-                d.bytesRemaining = d.sampleLength;
-            } else if (d.irqEnabled) {
-                d.irq = true;
-            }
-        }
+    if (d.sampleBufferEmpty && d.bytesRemaining > 0 && !d.dmaPending) {
+        d.dmaAddress = d.currentAddress;
+        d.dmaPending = true;
     }
 }
 
-void NESAPU::clock(const std::function<std::uint8_t(std::uint16_t)>& readMemory) {
+void NESAPU::clock() {
     state.evenCycle = !state.evenCycle;
     if (state.evenCycle) {
         clockPulseTimer(state.pulse1);
@@ -310,7 +299,7 @@ void NESAPU::clock(const std::function<std::uint8_t(std::uint16_t)>& readMemory)
         clockNoiseTimer();
     }
     clockTriangleTimer();
-    clockDmc(readMemory);
+    clockDmc();
 
     ++state.frameCycle;
     if (state.frameCycle == 3729 || state.frameCycle == 11186) quarterFrame();
@@ -336,4 +325,31 @@ std::vector<std::int16_t> NESAPU::takeSamples() {
     std::vector<std::int16_t> result;
     result.swap(samples);
     return result;
+}
+
+
+bool NESAPU::consumeDmcDmaRequest(std::uint16_t& address) {
+    auto& d = state.dmc;
+    if (!d.dmaPending) return false;
+    address = d.dmaAddress;
+    d.dmaPending = false;
+    return true;
+}
+
+void NESAPU::completeDmcDma(std::uint8_t value) {
+    auto& d = state.dmc;
+    if (!d.sampleBufferEmpty || d.bytesRemaining == 0) return;
+    d.sampleBuffer = value;
+    d.sampleBufferEmpty = false;
+    d.currentAddress = d.currentAddress == 0xFFFF
+        ? 0x8000 : static_cast<std::uint16_t>(d.currentAddress + 1);
+    --d.bytesRemaining;
+    if (d.bytesRemaining == 0) {
+        if (d.loop) {
+            d.currentAddress = d.sampleAddress;
+            d.bytesRemaining = d.sampleLength;
+        } else if (d.irqEnabled) {
+            d.irq = true;
+        }
+    }
 }
