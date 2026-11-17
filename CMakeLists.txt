@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(NES_Emulator VERSION 0.41.1 LANGUAGES CXX)
+project(NES_Emulator VERSION 0.42.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -44,3 +44,14 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pixelcore-nes.desktop
 install(FILES data/pixelcore-nes.svg
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
 )
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(mmc5-irq-tests
+        tests/mmc5_irq_tests.cpp
+        src/cartridge/cartridge.cpp
+    )
+    target_include_directories(mmc5-irq-tests PRIVATE src/cartridge)
+    target_compile_options(mmc5-irq-tests PRIVATE -Wall -Wextra -Wpedantic)
+    add_test(NAME mmc5-irq-tests COMMAND mmc5-irq-tests)
+endif()
