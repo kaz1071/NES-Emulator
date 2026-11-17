@@ -413,7 +413,7 @@ std::uint8_t Cartridge::readMmc5Chr(std::uint16_t address, bool background) cons
     const std::size_t slot = address / 0x400;
     const std::size_t groupSize = std::size_t{1} << (3 - (mmc5ChrMode & 3));
     const std::size_t registerCount = background ? 4 : 8;
-    const std::size_t registerSlot = background ? slot % 4 : slot;
+    const std::size_t registerSlot = background && mmc5ChrMode != 0 ? slot % 4 : slot;
     const std::size_t registerIndex =
         std::min(registerCount - 1,
                  ((registerSlot / groupSize) + 1) * groupSize - 1);
