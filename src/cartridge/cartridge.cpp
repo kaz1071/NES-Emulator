@@ -47,14 +47,6 @@ CartridgeState Cartridge::saveState() const {
     state.mmc5RamProtect2 = mmc5RamProtect2;
     state.mmc5ChrHigh = mmc5ChrHigh;
     state.usesChrRam = usesChrRam;
-    mmc5PrgRegisters = state.mmc5PrgRegisters;
-    mmc5ChrRegisters = state.mmc5ChrRegisters;
-    mmc5PrgRam = state.mmc5PrgRam;
-    mmc5PrgMode = state.mmc5PrgMode;
-    mmc5ChrMode = state.mmc5ChrMode;
-    mmc5RamProtect1 = state.mmc5RamProtect1;
-    mmc5RamProtect2 = state.mmc5RamProtect2;
-    mmc5ChrHigh = state.mmc5ChrHigh;
     if (usesChrRam) {
         const std::size_t count = std::min(chrData.size(), state.chrRam.size());
         std::copy_n(chrData.begin(), count, state.chrRam.begin());
@@ -85,6 +77,14 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mapper40IrqCounter = state.mapper40IrqCounter;
     mapper40IrqEnabled = state.mapper40IrqEnabled;
     mapper40IrqPending = state.mapper40IrqPending;
+    mmc5PrgRegisters = state.mmc5PrgRegisters;
+    mmc5ChrRegisters = state.mmc5ChrRegisters;
+    mmc5PrgRam = state.mmc5PrgRam;
+    mmc5PrgMode = state.mmc5PrgMode;
+    mmc5ChrMode = state.mmc5ChrMode;
+    mmc5RamProtect1 = state.mmc5RamProtect1;
+    mmc5RamProtect2 = state.mmc5RamProtect2;
+    mmc5ChrHigh = state.mmc5ChrHigh;
     if (usesChrRam) {
         const std::size_t count = std::min(chrData.size(), state.chrRam.size());
         std::copy_n(state.chrRam.begin(), count, chrData.begin());
