@@ -304,7 +304,7 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
                 // 32 KiB mode: D1-D5 select the 32 KiB group;
                 // CPU A14 selects the lower or upper 16 KiB half.
                 const std::size_t bank16 = (data >> 1) & 0x1F;
-                bank = bank16 * 2 + ((address >> 14) & 1);
+                bank = bank16 * 4 + ((address >> 13) & 3);
                 break;
             }
             case 1: {
