@@ -25,6 +25,8 @@ public:
     void reset();
     void clockPpu();
     void clockCpuCycle();
+    bool consumeDmcDmaRequest(std::uint16_t& address);
+    void completeDmcDma(std::uint8_t value);
     std::vector<std::int16_t> takeAudioSamples();
     bool consumeNmi();
     bool irqPending() const;
