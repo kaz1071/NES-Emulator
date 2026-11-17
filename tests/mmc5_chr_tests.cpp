@@ -81,6 +81,16 @@ int main() {
     expect(restored.readMmc5Chr(0x0800, true) == 6,
            "background CHR registers survive save states");
 
+    // The two high bits in $5130 extend each CHR bank register.
+    cartridge.chrData.resize(512 * 0x400);
+    cartridge.chrData[0] = 0x5A;
+    cartridge.chrData[256 * 0x400] = 0xA5;
+    cartridge.writePrg(0x5101, 3);
+    cartridge.writePrg(0x5130, 1);
+    cartridge.writePrg(0x5120, 0);
+    expect(cartridge.readMmc5Chr(0x0000, false) == 0xA5,
+           "$5130 high bits extend the selected CHR bank");
+
     if (failures != 0) {
         std::cerr << failures << " MMC5 CHR test(s) failed\n";
         return EXIT_FAILURE;
