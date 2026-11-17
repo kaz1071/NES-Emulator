@@ -216,7 +216,8 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
         }
         if (address == 0x5200 || address == 0x5201 || address == 0x5202 || address == 0x5203)
             return 0;
-        if (address >= 0x5C00 && address < 0x6000) return mmc5ExRam[address & 0x03FF];
+        if (address >= 0x5C00 && address < 0x6000)
+            return mmc5ExRamMode >= 2 ? mmc5ExRam[address & 0x03FF] : 0;
         if (address >= 0x6000 && address < 0x8000) {
             const std::size_t bank = mmc5PrgRegisters[0] & 0x7F;
             const std::size_t offset = bank * 0x2000 + (address & 0x1FFF);
@@ -322,7 +323,12 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
 void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
     if (mapper == 5) {
         if (address >= 0x5C00 && address < 0x6000) {
-            if (mmc5ExRamMode >= 2) mmc5ExRam[address & 0x03FF] = value;
+            // Modes 0/1 expose ExRAM to the PPU; CPU writes are only
+            // accepted during the visible rendering period. Mode 2 is
+            // general-purpose read/write RAM; mode 3 is read-only.
+            const bool renderingMode = mmc5ExRamMode <= 1;
+            if ((renderingMode && mmc5InFrame) || mmc5ExRamMode == 2)
+                mmc5ExRam[address & 0x03FF] = value;
             return;
         }
         if (address >= 0x6000 && address < 0x8000) {
