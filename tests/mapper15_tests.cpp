@@ -26,15 +26,15 @@ int main() {
 
     // Mode 0: 32 KiB groups, selected in 32 KiB units.
     cart.writePrg(0x8000, 0x04); // 32 KiB group 2
-    check(cart.readPrg(0x8000) == 4, "mode 0 selects the lower 8 KiB page");
-    check(cart.readPrg(0xC000) == 7, "mode 0 maps the full 32 KiB group");
+    check(cart.readPrg(0x8000) == 8, "mode 0 selects the lower 8 KiB page");
+    check(cart.readPrg(0xC000) == 10, "mode 0 maps the full 32 KiB group");
     cart.writeChr(0x0010, 0xA5);
     check(cart.readChr(0x0010) == 0, "mode 0 protects CHR-RAM writes");
 
     // Mode 1: UNROM-style lower selectable 16 KiB and 128 KiB-block upper bank.
     cart.writePrg(0x8001, 0x02);
     check(cart.readPrg(0x8000) == 4, "mode 1 lower 16 KiB uses selected bank");
-    check(cart.readPrg(0xC000) == 15, "mode 1 upper 16 KiB is fixed within selected 128 KiB block");
+    check(cart.readPrg(0xC000) == 14, "mode 1 upper 16 KiB is fixed within selected 128 KiB block");
     cart.writeChr(0x0010, 0x5A);
     check(cart.readChr(0x0010) == 0x5A, "mode 1 allows CHR-RAM writes");
 
