@@ -812,7 +812,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (audioDevice != 0) SDL_CloseAudioDevice(audioDevice);\n    SDL_DestroyTexture(screen);
+    if (audioDevice != 0) SDL_CloseAudioDevice(audioDevice);
+    SDL_DestroyTexture(screen);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
