@@ -2,7 +2,7 @@
 
 A custom NES emulator built from scratch in C++ using SDL2, designed for Linux. PixelCore is the umbrella name for a planned family of emulators.
 
-The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), MMC5 (mapper 5, PRG/CHR banking), and GxROM (mapper 66), and MMC2 (mapper 9), Color Dreams (mapper 11), an experimental 6502 CPU, and a scanline-based PPU renderer.
+The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), MMC5 (mapper 5, PRG/CHR banking), MMC2 (mapper 9), Color Dreams (mapper 11), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
 
 
 ### MMC2 mapper 9, Color Dreams mapper 11, and MMC5 audio (0.51.0)
