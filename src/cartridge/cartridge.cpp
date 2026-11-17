@@ -37,6 +37,7 @@ CartridgeState Cartridge::saveState() const {
     state.mapper40PrgBank = mapper40PrgBank;
     state.mapper13ChrBank = mapper13ChrBank;
     state.mapper71PrgBank = mapper71PrgBank;
+    state.mapper94PrgBank = mapper94PrgBank;
     state.mmc2ChrBanks = mmc2ChrBanks;
     state.mmc2PrgBank = mmc2PrgBank;
     state.mmc2Latch0Fe = mmc2Latch0Fe;
@@ -98,6 +99,7 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mapper40PrgBank = state.mapper40PrgBank;
     mapper13ChrBank = state.mapper13ChrBank;
     mapper71PrgBank = state.mapper71PrgBank;
+    mapper94PrgBank = state.mapper94PrgBank;
     mmc2ChrBanks = state.mmc2ChrBanks;
     mmc2PrgBank = state.mmc2PrgBank;
     mmc2Latch0Fe = state.mmc2Latch0Fe;
@@ -287,7 +289,14 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
             slot == 3 ? (mapper40PrgBank & 7) : 7;
         return prgRom[(bank % count) * 0x2000 + (address & 0x1FFF)];
     }
-    if (mapper == 71) {
+    if (mapper == 94) {
+        const std::size_t count = prgRom.size() / PRG_BANK_SIZE;
+        if (count < 2) return 0;
+        const std::size_t bank = address < 0xC000
+            ? static_cast<std::size_t>(mapper94PrgBank) % count
+            : count - 1;
+        offset = bank * PRG_BANK_SIZE + (address & 0x3FFF);
+    } else if (mapper == 71) {
         const std::size_t count = prgRom.size() / PRG_BANK_SIZE;
         if (count < 2) return 0;
         const std::size_t bank = address < 0xC000
@@ -422,6 +431,10 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
         return;
     }
     if (address < 0x8000) return;
+    if (mapper == 94) {
+        mapper94PrgBank = (value >> 2) & 0x07;
+        return;
+    }
     if (mapper == 71) {
         mapper71PrgBank = value & 0x1F;
         return;
@@ -711,9 +724,9 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::uint8_t mapper =
         static_cast<std::uint8_t>((flags6 >> 4) | (flags7 & 0xF0));
 
-    if (mapper != 0 && mapper != 1 && mapper != 2 && mapper != 3 && mapper != 4 && mapper != 5 && mapper != 7 && mapper != 9 && mapper != 10 && mapper != 11 && mapper != 13 && mapper != 40 && mapper != 71 && mapper != 66) {
+    if (mapper != 0 && mapper != 1 && mapper != 2 && mapper != 3 && mapper != 4 && mapper != 5 && mapper != 7 && mapper != 9 && mapper != 10 && mapper != 11 && mapper != 13 && mapper != 40 && mapper != 71 && mapper != 94 && mapper != 66) {
         error = "Unsupported mapper " + std::to_string(mapper) +
-                ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 9 (MMC2), mapper 10 (MMC4), mapper 11 (Color Dreams), mapper 13 (CPROM), mapper 40 (NTDEC 2722), mapper 66 (GxROM), and mapper 71 (Camerica).";
+                ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 9 (MMC2), mapper 10 (MMC4), mapper 11 (Color Dreams), mapper 13 (CPROM), mapper 40 (NTDEC 2722), mapper 66 (GxROM), and mapper 71 (Camerica), and mapper 94 (UN1ROM).";
         return false;
     }
 
@@ -722,6 +735,10 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::size_t chrSize =
         static_cast<std::size_t>(bytes[5]) * CHR_BANK_SIZE;
 
+    if (mapper == 94 && (prgSize < 32 * 1024 || prgSize > 128 * 1024 || prgSize % (16 * 1024) != 0)) {
+        error = "Mapper 94 requires 32 to 128 KiB of PRG-ROM in 16 KiB banks.";
+        return false;
+    }
     if (mapper == 71 && (prgSize < 32 * 1024 || prgSize > 512 * 1024 || prgSize % (16 * 1024) != 0)) {
         error = "Mapper 71 requires 32 to 512 KiB of PRG-ROM in 16 KiB banks.";
         return false;
