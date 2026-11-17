@@ -15,6 +15,9 @@ constexpr std::array<std::uint8_t, 32> TRIANGLE_SEQUENCE{{
     15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,
     0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 }};
+constexpr std::array<std::uint16_t, 16> DMC_PERIODS{{
+    428,380,340,320,286,254,226,214,190,160,142,128,106,85,72,54
+}};
 constexpr std::uint32_t CPU_FREQUENCY = 1789773;
 constexpr std::uint32_t SAMPLE_RATE = 44100;
 }
@@ -26,6 +29,9 @@ std::uint8_t NESAPU::lengthValue(std::uint8_t index) {
 void NESAPU::reset() {
     state = {};
     state.noise.shift = 1;
+    state.dmc.bitsRemaining = 8;
+    state.dmc.sampleBufferEmpty = true;
+    state.dmc.silence = true;
     samples.clear();
 }
 
@@ -33,6 +39,9 @@ void NESAPU::loadState(const State& saved) {
     state = saved;
     state.noise.shift &= 0x7FFF;
     if (state.noise.shift == 0) state.noise.shift = 1;
+    state.dmc.rateIndex &= 0x0F;
+    state.dmc.outputLevel &= 0x7F;
+    if (state.dmc.bitsRemaining == 0 || state.dmc.bitsRemaining > 8) state.dmc.bitsRemaining = 8;
     samples.clear();
 }
 
@@ -94,7 +103,17 @@ void NESAPU::write(std::uint16_t address, std::uint8_t value) {
         if (state.noise.enabled) state.noise.length = lengthValue(value >> 3);
         state.noise.envelopeStart = true;
         break;
+    case 0x4010:
+        state.dmc.irqEnabled = (value & 0x80) != 0;
+        state.dmc.loop = (value & 0x40) != 0;
+        state.dmc.rateIndex = value & 0x0F;
+        if (!state.dmc.irqEnabled) state.dmc.irq = false;
+        break;
+    case 0x4011: state.dmc.outputLevel = value & 0x7F; break;
+    case 0x4012: state.dmc.sampleAddress = static_cast<std::uint16_t>(0xC000 | (value << 6)); break;
+    case 0x4013: state.dmc.sampleLength = static_cast<std::uint16_t>((value << 4) | 1); break;
     case 0x4015:
+        state.dmc.irq = false;
         state.pulse1.enabled = (value & 0x01) != 0;
         state.pulse2.enabled = (value & 0x02) != 0;
         state.triangle.enabled = (value & 0x04) != 0;
@@ -103,6 +122,11 @@ void NESAPU::write(std::uint16_t address, std::uint8_t value) {
         if (!state.pulse2.enabled) state.pulse2.length = 0;
         if (!state.triangle.enabled) state.triangle.length = 0;
         if (!state.noise.enabled) state.noise.length = 0;
+        if ((value & 0x10) == 0) state.dmc.bytesRemaining = 0;
+        else if (state.dmc.bytesRemaining == 0) {
+            state.dmc.currentAddress = state.dmc.sampleAddress;
+            state.dmc.bytesRemaining = state.dmc.sampleLength;
+        }
         state.frameIrq = false;
         break;
     case 0x4017:
@@ -122,7 +146,9 @@ std::uint8_t NESAPU::readStatus() {
     if (state.pulse2.length) result |= 0x02;
     if (state.triangle.length) result |= 0x04;
     if (state.noise.length) result |= 0x08;
+    if (state.dmc.bytesRemaining > 0) result |= 0x10;
     if (state.frameIrq) result |= 0x40;
+    if (state.dmc.irq) result |= 0x80;
     state.frameIrq = false;
     return result;
 }
@@ -232,10 +258,51 @@ double NESAPU::mixedOutput() const {
         ? (n.constantVolume ? n.envelopePeriod : n.envelopeDecay) : 0;
     const double tndInput = triangle / 8227.0 + noise / 12241.0;
     const double tnd = tndInput == 0.0 ? 0.0 : 159.79 / (1.0 / tndInput + 100.0);
-    return std::clamp(pulse + tnd, 0.0, 1.0);
+    const double dmc = (state.dmc.outputLevel / 127.0) * 0.08;
+    return std::clamp(pulse + tnd + dmc, 0.0, 1.0);
 }
 
-void NESAPU::clock() {
+void NESAPU::clockDmc(const std::function<std::uint8_t(std::uint16_t)>& readMemory) {
+    auto& d = state.dmc;
+    if (d.timerCounter == 0) {
+        d.timerCounter = static_cast<std::uint16_t>(DMC_PERIODS[d.rateIndex] - 1);
+        if (!d.silence) {
+            if (d.shiftRegister & 1) {
+                if (d.outputLevel <= 125) d.outputLevel += 2;
+            } else if (d.outputLevel >= 2) d.outputLevel -= 2;
+        }
+        d.shiftRegister >>= 1;
+        if (--d.bitsRemaining == 0) {
+            d.bitsRemaining = 8;
+            if (d.sampleBufferEmpty) d.silence = true;
+            else {
+                d.silence = false;
+                d.shiftRegister = d.sampleBuffer;
+                d.sampleBufferEmpty = true;
+            }
+        }
+    } else {
+        --d.timerCounter;
+    }
+
+    if (d.sampleBufferEmpty && d.bytesRemaining > 0) {
+        d.sampleBuffer = readMemory(d.currentAddress);
+        d.sampleBufferEmpty = false;
+        d.currentAddress = d.currentAddress == 0xFFFF
+            ? 0x8000 : static_cast<std::uint16_t>(d.currentAddress + 1);
+        --d.bytesRemaining;
+        if (d.bytesRemaining == 0) {
+            if (d.loop) {
+                d.currentAddress = d.sampleAddress;
+                d.bytesRemaining = d.sampleLength;
+            } else if (d.irqEnabled) {
+                d.irq = true;
+            }
+        }
+    }
+}
+
+void NESAPU::clock(const std::function<std::uint8_t(std::uint16_t)>& readMemory) {
     state.evenCycle = !state.evenCycle;
     if (state.evenCycle) {
         clockPulseTimer(state.pulse1);
@@ -243,6 +310,7 @@ void NESAPU::clock() {
         clockNoiseTimer();
     }
     clockTriangleTimer();
+    clockDmc(readMemory);
 
     ++state.frameCycle;
     if (state.frameCycle == 3729 || state.frameCycle == 11186) quarterFrame();
