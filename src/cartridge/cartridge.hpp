@@ -39,6 +39,8 @@ struct CartridgeState {
     std::uint8_t mmc5NametableMap = 0, mmc5ExRamMode = 0;
     std::uint8_t mmc5FillTile = 0, mmc5FillAttribute = 0;
     std::uint8_t mmc5VerticalSplit = 0, mmc5VerticalSplitScroll = 0, mmc5VerticalSplitBank = 0;
+    std::uint8_t mmc5IrqCompare = 0, mmc5IrqScanline = 0;
+    bool mmc5IrqEnabled = false, mmc5IrqPending = false, mmc5InFrame = false;
 };
 
 struct Cartridge {
@@ -76,16 +78,19 @@ struct Cartridge {
     std::uint8_t mmc5NametableMap = 0, mmc5ExRamMode = 0;
     std::uint8_t mmc5FillTile = 0, mmc5FillAttribute = 0;
     std::uint8_t mmc5VerticalSplit = 0, mmc5VerticalSplitScroll = 0, mmc5VerticalSplitBank = 0;
+    std::uint8_t mmc5IrqCompare = 0, mmc5IrqScanline = 0;
+    bool mmc5IrqEnabled = false, mmc5IrqPending = false, mmc5InFrame = false;
     CartridgeState saveState() const;
     bool loadState(const CartridgeState& state);
     std::uint64_t romFingerprint() const;
     bool prgRamEnabled() const;
     bool prgRamWritable() const;
     bool irqPending() const;
-    void clockScanline();
+    void clockScanline(bool rendering = true);
+    void endMmc5Frame();
     void clockCpuCycle();
 
-    std::uint8_t readPrg(std::uint16_t address) const;
+    std::uint8_t readPrg(std::uint16_t address);
     void writePrg(std::uint16_t address, std::uint8_t value);
     std::uint8_t readChr(std::uint16_t address) const;
     std::uint8_t readMmc5ExtendedChr(std::uint16_t address, std::uint8_t bank) const;
