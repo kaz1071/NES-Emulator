@@ -34,6 +34,7 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] Initial NES APU audio: pulse, triangle, and noise channels mixed to SDL2 output
 - [x] Initial DMC sample playback, looping, and IRQ support
 - [x] DMC sample-fetch DMA with approximate 3/4-cycle CPU stalls
+- [x] Delayed frame-sequencer reset after `$4017` writes, with immediate IRQ inhibit
 - [ ] Cycle-accurate DMC DMA bus sequencing and APU timing
 - [ ] Additional cartridge mappers
 
