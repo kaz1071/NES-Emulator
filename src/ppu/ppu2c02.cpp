@@ -370,6 +370,8 @@ void PPU2C02::incrementScrollY() {
 
 void PPU2C02::clock() {
     // NTSC PPU timing: 341 dots across 262 scanlines.
+    if (scanline == 240 && ppuCycle == 1 && cartridge != nullptr && cartridge->mapper == 5)
+        cartridge->endMmc5Frame();
     if (scanline == 241 && ppuCycle == 1) {
         status |= 0x80; // VBlank begins
         ++vblankEvents;
@@ -391,10 +393,9 @@ void PPU2C02::clock() {
         lineOam[line] = oam;
         lineSpriteControl[line] = control;
         renderScanline(scanline);
-        // The current renderer is scanline-based, so clock MMC3's IRQ counter
-        // once at the start of each rendered scanline as an approximation
-        // of the PPU A12 fetch edge.
-        if (rendering && cartridge != nullptr) cartridge->clockScanline();
+        // Mapper IRQ counters use this renderer's visible-scanline boundary.
+        // MMC5 hardware detects fetch sequences, so this remains approximate.
+        if (cartridge != nullptr) cartridge->clockScanline(rendering);
     }
     if (rendering && renderLine) {
         // This renderer samples one scroll position per scanline rather
@@ -806,6 +807,8 @@ void PPU2C02::cpuWrite(std::uint16_t registerAddress, std::uint8_t value) {
             break;
         case 1:
             mask = value;
+            if ((mask & 0x18) == 0 && cartridge != nullptr && cartridge->mapper == 5)
+                cartridge->endMmc5Frame();
             break;
         case 3:
             oamAddress = value;
