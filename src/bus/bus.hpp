@@ -1,9 +1,11 @@
 #pragma once
 #include "../cartridge/cartridge.hpp"
 #include "../ppu/ppu2c02.hpp"
+#include "../apu/apu.hpp"
 #include <array>
 #include <cstdint>
 #include <cstddef>
+#include <vector>
 
 class NESBus {
 public:
@@ -15,6 +17,7 @@ public:
         std::uint8_t oamDmaPage = 0;
         PPU2C02::State ppu{};
         CartridgeState cartridge{};
+        NESAPU::State apu{};
     };
     State saveState() const;
     bool loadState(const State& state);
@@ -22,6 +25,7 @@ public:
     void reset();
     void clockPpu();
     void clockCpuCycle();
+    std::vector<std::int16_t> takeAudioSamples();
     bool consumeNmi();
     bool irqPending() const;
     std::uint8_t read(std::uint16_t address);
@@ -66,4 +70,5 @@ private:
     std::uint8_t oamDmaPage = 0;
     Cartridge* cartridge = nullptr;
     PPU2C02 ppu;
+    NESAPU apu;
 };
