@@ -22,6 +22,7 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] AxROM (mapper 7) switchable 32 KiB PRG-ROM banks and one-screen mirroring control
 - [x] MMC3 (mapper 4) PRG/CHR banking, mirroring, PRG-RAM protection, and approximate scanline IRQ
 - [x] Initial MMC5 (mapper 5) PRG/CHR bank registers and protected cartridge RAM
+- [x] MMC5 vertical split-screen rendering and approximate scanline IRQ, including scanline-zero compares
 - [x] Mapper 40 fixed/switchable PRG banks and CPU-cycle IRQ
 - [x] GxROM (mapper 66) bank switching for up to 128 KiB PRG-ROM and 32 KiB CHR-ROM
 - [x] CHR-ROM loading and CHR-RAM allocation
