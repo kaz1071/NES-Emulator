@@ -453,10 +453,21 @@ int main(int argc, char** argv) {
         std::cout << "No ROM loaded. Choose LOAD ROM or PRELOADED ROMS to start a game.\n";
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << '\n';
         return 1;
     }
+    SDL_AudioSpec audioWant{};
+    audioWant.freq = 44100;
+    audioWant.format = AUDIO_S16SYS;
+    audioWant.channels = 1;
+    audioWant.samples = 1024;
+    SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioWant, nullptr, 0);
+    if (audioDevice == 0)
+        std::cerr << "Audio device unavailable: " << SDL_GetError() << '\\n';
+    else
+        SDL_PauseAudioDevice(audioDevice, 0);
+
     SDL_Window* window = SDL_CreateWindow(windowTitle.c_str(), SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     if (!window) {
@@ -714,6 +725,21 @@ int main(int argc, char** argv) {
             }
         }
 
+        if (audioDevice != 0 && hasCartridge && !rewinding) {
+            auto audioSamples = bus.takeAudioSamples();
+            if (!audioSamples.empty()) {
+                // Keep a short queue so a slow frame cannot create noticeable audio delay.
+                constexpr Uint32 MAX_QUEUED_AUDIO = 44100 * sizeof(std::int16_t) / 5;
+                if (SDL_GetQueuedAudioSize(audioDevice) > MAX_QUEUED_AUDIO)
+                    SDL_ClearQueuedAudio(audioDevice);
+                SDL_QueueAudio(audioDevice, audioSamples.data(),
+                    static_cast<Uint32>(audioSamples.size() * sizeof(std::int16_t)));
+            }
+        } else {
+            // Discard samples while in menus or rewinding; never replay stale sound.
+            (void)bus.takeAudioSamples();
+        }
+
         bus.renderFrame(frame);
 
         const Uint32 diagnosticNow = SDL_GetTicks();
@@ -786,7 +812,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    SDL_DestroyTexture(screen);
+    if (audioDevice != 0) SDL_CloseAudioDevice(audioDevice);\n    SDL_DestroyTexture(screen);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
