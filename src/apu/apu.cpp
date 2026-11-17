@@ -142,6 +142,16 @@ void NESAPU::write(std::uint16_t address, std::uint8_t value) {
 }
 
 void NESAPU::writeMmc5(std::uint16_t address, std::uint8_t value) {
+    if (address == 0x5010) {
+        state.mmc5Pcm.irqEnabled = (value & 0x80) != 0;
+        state.mmc5Pcm.readMode = (value & 0x01) != 0;
+        if (!state.mmc5Pcm.irqEnabled) state.mmc5Pcm.irq = false;
+        return;
+    }
+    if (address == 0x5011) {
+        if (!state.mmc5Pcm.readMode) state.mmc5Pcm.output = value & 0x7F;
+        return;
+    }
     if (address == 0x5015) {
         for (std::size_t i = 0; i < state.mmc5Pulse.size(); ++i) { auto& p = state.mmc5Pulse[i]; p.enabled = (value & (1u << i)) != 0; if (!p.enabled) p.length = 0; }
         return;
@@ -158,6 +168,18 @@ void NESAPU::writeMmc5(std::uint16_t address, std::uint8_t value) {
 }
 
 std::uint8_t NESAPU::readMmc5Status() const { return static_cast<std::uint8_t>((state.mmc5Pulse[0].length ? 1 : 0) | (state.mmc5Pulse[1].length ? 2 : 0)); }
+
+std::uint8_t NESAPU::readMmc5PcmStatus() {
+    const std::uint8_t result = state.mmc5Pcm.irq ? 0x80 : 0x00;
+    state.mmc5Pcm.irq = false;
+    return result;
+}
+
+void NESAPU::mmc5PcmRead(std::uint8_t value) {
+    if (!state.mmc5Pcm.readMode) return;
+    state.mmc5Pcm.output = value & 0x7F;
+    if (value == 0) state.mmc5Pcm.irq = true;
+}
 
 std::uint8_t NESAPU::readStatus() {
     std::uint8_t result = 0;
@@ -291,7 +313,8 @@ double NESAPU::mixedOutput() const {
     const double tndInput = triangle / 8227.0 + noise / 12241.0;
     const double tnd = tndInput == 0.0 ? 0.0 : 159.79 / (1.0 / tndInput + 100.0);
     const double dmc = (state.dmc.outputLevel / 127.0) * 0.08;
-    return std::clamp(pulse + tnd + dmc, 0.0, 1.0);
+    const double mmc5Pcm = (state.mmc5Pcm.output / 127.0) * 0.12;
+    return std::clamp(pulse + tnd + dmc + mmc5Pcm, 0.0, 1.0);
 }
 
 void NESAPU::clockDmc() {
