@@ -361,6 +361,16 @@ std::uint8_t PPU2C02::ppuRead(std::uint16_t address) const {
         return 0;
     }
     if (address < 0x3F00) {
+        if (cartridge != nullptr && cartridge->mapper == 5) {
+            const std::uint16_t relative = static_cast<std::uint16_t>((address - 0x2000) & 0x0FFF);
+            const std::size_t table = relative / 0x400;
+            const std::size_t offset = relative & 0x3FF;
+            const std::uint8_t source = (cartridge->mmc5NametableMap >> (table * 2)) & 3;
+            if (source <= 1) return nametableRam[source * 0x400 + offset];
+            if (source == 2) return cartridge->mmc5ExRamMode == 0 ? cartridge->mmc5ExRam[offset] : 0;
+            if (offset < 0x3C0) return cartridge->mmc5FillTile;
+            return static_cast<std::uint8_t>(cartridge->mmc5FillAttribute * 0x55);
+        }
         return nametableRam[mapNametableAddress(address)];
     }
     return paletteRam[mapPaletteAddress(address)] & 0x3F;
@@ -373,6 +383,15 @@ void PPU2C02::ppuWrite(std::uint16_t address, std::uint8_t value) {
         return;
     }
     if (address < 0x3F00) {
+        if (cartridge != nullptr && cartridge->mapper == 5) {
+            const std::uint16_t relative = static_cast<std::uint16_t>((address - 0x2000) & 0x0FFF);
+            const std::size_t table = relative / 0x400;
+            const std::size_t offset = relative & 0x3FF;
+            const std::uint8_t source = (cartridge->mmc5NametableMap >> (table * 2)) & 3;
+            if (source <= 1) nametableRam[source * 0x400 + offset] = value;
+            else if (source == 2 && cartridge->mmc5ExRamMode == 0) cartridge->mmc5ExRam[offset] = value;
+            return;
+        }
         nametableRam[mapNametableAddress(address)] = value;
         return;
     }
