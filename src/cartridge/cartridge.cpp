@@ -545,6 +545,11 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
 
     Cartridge loaded;
     loaded.mapper = mapper;
+    if (mapper == 5) {
+        const std::uint8_t lastBank = static_cast<std::uint8_t>((prgSize / 8192) - 1);
+        loaded.mmc5PrgRegisters = {0, 0x80, 0x81, 0x82,
+                                   static_cast<std::uint8_t>(0x80 | lastBank)};
+    }
     loaded.mirroring = (flags6 & 0x08)
         ? Mirroring::FourScreen
         : ((flags6 & 0x01) ? Mirroring::Vertical : Mirroring::Horizontal);
