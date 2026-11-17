@@ -91,7 +91,8 @@ std::uint8_t NESBus::read(std::uint16_t address) {
     }
     if (address < 0x4020) return 0; // Other APU and I/O registers are placeholders
     if (address < 0x6000) {
-        if (cartridge != nullptr && cartridge->mapper == 5 && address >= 0x5C00) return cartridge->readPrg(address);
+        if (cartridge != nullptr && cartridge->mapper == 5 &&
+            (address == 0x5204 || address >= 0x5C00)) return cartridge->readPrg(address);
         return 0;
     }
     if (address < 0x8000 && cartridge != nullptr && cartridge->mapper == 40)
