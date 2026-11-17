@@ -494,7 +494,7 @@ int main(int argc, char** argv) {
         std::cout << "No ROM loaded. Choose LOAD ROM or PRELOADED ROMS to start a game.\n";
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << '\n';
         return 1;
     }
@@ -504,35 +504,80 @@ int main(int argc, char** argv) {
     audioWant.channels = 1;
     audioWant.samples = 1024;
     SDL_AudioSpec audioHave{};
-    SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(
-        nullptr, 0, &audioWant, &audioHave, 0);
-    if (audioDevice == 0) {
-        const char* error = SDL_GetError();
-        std::cerr << "Audio unavailable: SDL could not open the default output device: "
-                  << ((error && *error) ? error : "(no SDL error text)") << '\\n';
-    } else {
-        std::cerr << "Audio device opened: " << audioHave.freq << " Hz, "
+    SDL_AudioDeviceID audioDevice = 0;
+    std::string audioFailure;
+
+    // Initialize audio separately from video. SDL_Init(AUDIO) can lock in a
+    // backend before we have a chance to try the other Linux audio drivers.
+    // SDL_AudioInit is the supported way to select and retry audio backends.
+    const int audioDriverCount = SDL_GetNumAudioDrivers();
+    std::cerr << "Audio: SDL has " << audioDriverCount
+              << " compiled audio backend(s).\\n";
+
+    auto tryAudioDriver = [&](const char* driver) {
+        SDL_AudioQuit();
+        if (SDL_AudioInit(driver) != 0) {
+            const char* error = SDL_GetError();
+            audioFailure = (error && *error) ? error : "audio backend initialization failed";
+            std::cerr << "Audio: backend "
+                      << (driver ? driver : "(default)")
+                      << " failed to initialize: " << audioFailure << '\\n';
+            return false;
+        }
+
+        audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioWant, &audioHave, 0);
+        if (audioDevice == 0) {
+            const char* error = SDL_GetError();
+            audioFailure = (error && *error) ? error : "no output device could be opened";
+            std::cerr << "Audio: backend "
+                      << (driver ? driver : "(default)")
+                      << " initialized but could not open an output device: "
+                      << audioFailure << '\\n';
+            SDL_AudioQuit();
+            return false;
+        }
+
+        std::cerr << "Audio device opened: backend="
+                  << (driver ? driver : "(default)") << ", "
+                  << audioHave.freq << " Hz, "
                   << static_cast<int>(audioHave.channels)
                   << " channel(s), format=0x" << std::hex << audioHave.format
                   << std::dec << ", device=" << audioDevice << '\\n';
+        return true;
+    };
 
-        // Start the device only after it is fully configured, then queue a
-        // longer reference tone so the host output path is easy to hear.
+    // Let SDL choose the system's configured backend first, then explicitly
+    // try each compiled backend in case the default server is unavailable.
+    tryAudioDriver(nullptr);
+    for (int i = 0; i < audioDriverCount && audioDevice == 0; ++i) {
+        const char* driver = SDL_GetAudioDriver(i);
+        if (driver && *driver) tryAudioDriver(driver);
+    }
+
+    if (audioDevice == 0) {
+        std::cerr << "Audio unavailable: every SDL audio backend failed. Last error: "
+                  << (audioFailure.empty() ? "unknown audio error" : audioFailure)
+                  << '\\n';
+        std::cerr << "The emulator will continue without audio.\\n";
+    } else {
         SDL_PauseAudioDevice(audioDevice, 0);
-        std::vector<std::int16_t> audioTestTone(44100);
-        constexpr double testToneFrequency = 440.0;
-        constexpr double testToneAmplitude = 16000.0;
-        for (std::size_t sample = 0; sample < audioTestTone.size(); ++sample) {
+        // One-second reference tone verifies the opened device independently
+        // of the NES APU. Use the obtained device sample rate for its pitch.
+        constexpr double toneFrequency = 440.0;
+        constexpr double toneAmplitude = 16000.0;
+        const int toneRate = audioHave.freq > 0 ? audioHave.freq : 44100;
+        std::vector<std::int16_t> tone(static_cast<std::size_t>(toneRate));
+        for (std::size_t i = 0; i < tone.size(); ++i) {
             const double phase = 2.0 * 3.14159265358979323846 *
-                testToneFrequency * static_cast<double>(sample) / 44100.0;
-            audioTestTone[sample] = static_cast<std::int16_t>(
-                testToneAmplitude * std::sin(phase));
+                toneFrequency * static_cast<double>(i) / toneRate;
+            tone[i] = static_cast<std::int16_t>(toneAmplitude * std::sin(phase));
         }
-        if (SDL_QueueAudio(audioDevice, audioTestTone.data(),
-                static_cast<Uint32>(audioTestTone.size() * sizeof(std::int16_t))) != 0) {
+        if (SDL_QueueAudio(audioDevice, tone.data(),
+                static_cast<Uint32>(tone.size() * sizeof(std::int16_t))) != 0) {
             const char* error = SDL_GetError();
             std::cerr << "Audio startup tone queue failed: "
-                      << ((error && *error) ? error : "(no SDL error text)") << '\\n';
+                      << ((error && *error) ? error : "unknown SDL queue error")
+                      << '\\n';
         } else {
             std::cerr << "Audio: queued 1-second 440 Hz output test tone.\\n";
         }
