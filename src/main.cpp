@@ -341,8 +341,9 @@ std::vector<PreloadedRom> findPreloadedRoms() {
     const auto exeDir = executableDirectory();
     if (!exeDir.empty()) {
         folders.push_back(exeDir.parent_path() / "share" / "pixelcore-nes" / "roms");
-        // Also support a source checkout with its executable in build/.
-        folders.push_back(exeDir.parent_path().parent_path() / "roms");
+        // In a source checkout, the executable is normally in build/, so
+        // the repository's roms/ folder is one level above the executable dir.
+        folders.push_back(exeDir.parent_path() / "roms");
     }
     const std::array<std::pair<const char*, const char*>, 5> games{{
         {"ZELDA", "Legend of Zelda, The (USA) (Rev 1).nes"},
