@@ -1,5 +1,7 @@
 #include "cartridge.hpp"
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 
