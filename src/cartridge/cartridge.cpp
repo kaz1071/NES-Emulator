@@ -170,8 +170,9 @@ void Cartridge::clockScanline(bool rendering) {
         } else if (mmc5IrqScanline < 0xFF) {
             ++mmc5IrqScanline;
         }
-        if (mmc5IrqCompare != 0 && mmc5IrqCompare < 240 &&
-            mmc5IrqScanline == mmc5IrqCompare)
+        // Scanline zero is a valid compare target: the first visible
+        // scanline establishes the in-frame state and is compared immediately.
+        if (mmc5IrqCompare < 240 && mmc5IrqScanline == mmc5IrqCompare)
             mmc5IrqPending = true;
         return;
     }
