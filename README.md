@@ -4,6 +4,14 @@ A custom NES emulator built from scratch in C++ using SDL2, designed for Linux. 
 
 The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), MMC5 (mapper 5, initial banking), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
 
+
+### MMC5 CHR banking (0.43.0)
+
+- Implements the MMC5 8 KiB, 4 KiB, 2 KiB, and 1 KiB CHR banking modes.
+- Separates background CHR registers (`$5128-$512B`) from sprite CHR registers (`$5120-$5127`).
+- Routes background and sprite pattern reads through their respective bank sets.
+- Adds regression tests for bank alignment, independent background/sprite banks, and save-state restoration.
+
 ## Current status
 
 - [x] C++20 and CMake project setup
