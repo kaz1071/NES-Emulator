@@ -32,7 +32,7 @@ struct CartridgeState {
     std::array<std::uint8_t, 5> mmc5PrgRegisters{};
     std::array<std::uint8_t, 8> mmc5ChrRegisters{};
     std::array<std::uint8_t, 4> mmc5BgChrRegisters{};
-    std::array<std::uint8_t, 8192> mmc5PrgRam{};
+    std::array<std::uint8_t, 1024 * 1024> mmc5PrgRam{};
     std::uint8_t mmc5PrgMode = 3, mmc5ChrMode = 3;
     std::uint8_t mmc5RamProtect1 = 0, mmc5RamProtect2 = 0;
     std::uint8_t mmc5ChrHigh = 0;
