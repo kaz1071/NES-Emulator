@@ -2,10 +2,13 @@
 
 A custom NES emulator built from scratch in C++ using SDL2, designed for Linux. PixelCore is the umbrella name for a planned family of emulators.
 
-The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), MMC5 (mapper 5, PRG/CHR banking), and GxROM (mapper 66), and Color Dreams (mapper 11), an experimental 6502 CPU, and a scanline-based PPU renderer.
+The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), MMC5 (mapper 5, PRG/CHR banking), and GxROM (mapper 66), and MMC2 (mapper 9), Color Dreams (mapper 11), an experimental 6502 CPU, and a scanline-based PPU renderer.
 
 
-### Color Dreams mapper 11 and MMC5 audio (0.50.0)
+### MMC2 mapper 9, Color Dreams mapper 11, and MMC5 audio (0.51.0)
+
+- Adds MMC2 PRG banking, four 4 KiB CHR bank registers, FD/FE latch switching, mirroring control, and save-state support.
+- Includes automated MMC2 bank/latch/state tests.
 
 - Implements all four MMC5 PRG banking modes selected by `$5100`: 32 KiB, 16 KiB, mixed 16/8 KiB, and four independent 8 KiB windows.
 - Supports banked PRG-RAM at `$6000-$7FFF` through `$5113`, plus RAM-selected windows in the upper PRG area.
