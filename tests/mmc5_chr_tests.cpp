@@ -76,7 +76,7 @@ int main() {
     const CartridgeState saved = cartridge.saveState();
     Cartridge restored{};
     restored.mapper = 5;
-    restored.chrData.resize(cartridge.chrData.size());
+    restored.chrData = cartridge.chrData;
     expect(restored.loadState(saved), "MMC5 CHR state restores");
     expect(restored.readMmc5Chr(0x0800, true) == 6,
            "background CHR registers survive save states");
