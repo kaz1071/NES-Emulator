@@ -53,8 +53,8 @@ sudo apt install build-essential cmake pkg-config libsdl2-dev zenity
 Clone and build:
 
 ```bash
-git clone https://github.com/kaz1071/NES-Emulator.git
-cd NES-Emulator
+git clone https://github.com/kaz1071/PixelCore---NES.git
+cd PixelCore---NES
 cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 cmake --build build -j$(nproc)
 cmake --install build
@@ -68,7 +68,7 @@ Start the emulator from the Chromebook/Linux app launcher by searching for **Pix
 
 The install step adds a pixel-art controller icon and a desktop launcher. The window title is **PixelCore - NES**.
 
-Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one of the linked game pages in your web browser, or place the five supported local game files in the `roms/` folder and choose **PRELOADED ROMS**. While a game is running, press **5** to choose a file and save a `.savestate`, press **8** to load a save-state for the currently loaded ROM, or hold **R** to rewind. Press **6** to cycle the rewind buffer through 3, 5, 10, and 15 seconds. The default is 10 seconds. The buffer fills as you play and uses additional memory for longer durations; it is temporary and is not a substitute for a saved state. The preloaded list is ordered as Zelda, Super Mario Bros. + Duck Hunt, Super Mario Bros. 2, The Lost Levels, and Super Mario Bros. 3. The `roms/` folder is ignored by Git, so ROM files are not uploaded to the public repository. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
+Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one of the linked game pages in your web browser, or place the five supported local game files in `~/.local/share/pixelcore-nes/roms/` and choose **PRELOADED ROMS**. You can override this folder with the `PIXELCORE_NES_ROM_DIR` environment variable. The app also checks the installed shared-data folder and the `roms/` folder in a source checkout, without depending on the directory it was launched from. While a game is running, press **5** to choose a file and save a `.savestate`, press **8** to load a save-state for the currently loaded ROM, or hold **R** to rewind. Press **6** to cycle the rewind buffer through 3, 5, 10, and 15 seconds. The default is 10 seconds. The buffer fills as you play and uses additional memory for longer durations; it is temporary and is not a substitute for a saved state. The preloaded list is ordered as Zelda, Super Mario Bros. + Duck Hunt, Super Mario Bros. 2, The Lost Levels, and Super Mario Bros. 3. The `roms/` folder is ignored by Git, so ROM files are not uploaded to the public repository. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
 
 ```bash
 ./build/nes-emulator /path/to/game.nes
@@ -79,6 +79,11 @@ Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one
 The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 7 (AxROM), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. UxROM switches the lower 16 KiB PRG window while keeping the final PRG bank fixed in the upper window. CNROM keeps 16 or 32 KiB of PRG-ROM fixed and switches among up to four 8 KiB CHR-ROM banks; CHR-RAM cartridges remain supported without CHR banking. AxROM switches among 32 KiB PRG-ROM banks and selects lower or upper single-screen mirroring; this implementation expects CHR-RAM. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls are approximate, APU timing is approximate, and DMC DMA uses an approximate 3/4-cycle CPU stall rather than full bus-cycle arbitration, and some mapper board variants are unsupported.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
+
+## Version 0.35.0
+
+- Make ROM discovery independent of the launcher's working directory and the developer's home directory. Preloaded ROMs use the per-user XDG data directory, with an environment-variable override and portable install/source-tree fallbacks.
+- Make the desktop launcher resolve `nes-emulator` through the user's executable search path instead of embedding the build user's absolute install path.
 
 ## Version 0.34.0
 
