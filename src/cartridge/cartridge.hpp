@@ -25,13 +25,14 @@ struct CartridgeState {
     std::uint8_t mmc3IrqLatch = 0, mmc3IrqCounter = 0;
     bool mmc3IrqReload = false, mmc3IrqEnabled = false, mmc3IrqPending = false;
     std::uint8_t mapper40PrgBank = 0;
+    std::uint8_t mapper13ChrBank = 0;
     std::array<std::uint8_t, 4> mmc2ChrBanks{};
     std::uint8_t mmc2PrgBank = 0;
     bool mmc2Latch0Fe = false, mmc2Latch1Fe = false;
     std::uint16_t mapper40IrqCounter = 0;
     bool mapper40IrqEnabled = false, mapper40IrqPending = false;
     bool usesChrRam = false;
-    std::array<std::uint8_t, 8192> chrRam{};
+    std::array<std::uint8_t, 16384> chrRam{};
     std::array<std::uint8_t, 5> mmc5PrgRegisters{};
     std::array<std::uint8_t, 8> mmc5ChrRegisters{};
     std::array<std::uint8_t, 4> mmc5BgChrRegisters{};
@@ -70,6 +71,7 @@ struct Cartridge {
     std::uint8_t mmc3IrqLatch = 0, mmc3IrqCounter = 0;
     bool mmc3IrqReload = false, mmc3IrqEnabled = false, mmc3IrqPending = false;
     std::uint8_t mapper40PrgBank = 0;
+    std::uint8_t mapper13ChrBank = 0;
     std::uint16_t mapper40IrqCounter = 0;
     bool mapper40IrqEnabled = false;
     bool mapper40IrqPending = false;
