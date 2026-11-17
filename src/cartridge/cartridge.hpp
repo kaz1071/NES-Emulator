@@ -31,6 +31,8 @@ struct CartridgeState {
     std::array<std::uint8_t, 8192> chrRam{};
     std::array<std::uint8_t, 5> mmc5PrgRegisters{};
     std::array<std::uint8_t, 8> mmc5ChrRegisters{};
+    std::array<std::uint8_t, 4> mmc5BgChrRegisters{};
+    std::array<std::uint8_t, 4> mmc5BgChrRegisters{};
     std::array<std::uint8_t, 8192> mmc5PrgRam{};
     std::uint8_t mmc5PrgMode = 3, mmc5ChrMode = 3;
     std::uint8_t mmc5RamProtect1 = 0, mmc5RamProtect2 = 0;
@@ -93,6 +95,7 @@ struct Cartridge {
     std::uint8_t readPrg(std::uint16_t address);
     void writePrg(std::uint16_t address, std::uint8_t value);
     std::uint8_t readChr(std::uint16_t address) const;
+    std::uint8_t readMmc5Chr(std::uint16_t address, bool background) const;
     std::uint8_t readMmc5ExtendedChr(std::uint16_t address, std::uint8_t bank) const;
     std::uint8_t readMmc5SplitChr(std::uint16_t address) const;
     void writeChr(std::uint16_t address, std::uint8_t value);
