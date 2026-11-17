@@ -26,6 +26,7 @@ struct CartridgeState {
     bool mmc3IrqReload = false, mmc3IrqEnabled = false, mmc3IrqPending = false;
     std::uint8_t mapper40PrgBank = 0;
     std::uint8_t mapper13ChrBank = 0;
+    std::uint8_t mapper71PrgBank = 0;
     std::array<std::uint8_t, 4> mmc2ChrBanks{};
     std::uint8_t mmc2PrgBank = 0;
     bool mmc2Latch0Fe = false, mmc2Latch1Fe = false;
@@ -72,6 +73,7 @@ struct Cartridge {
     bool mmc3IrqReload = false, mmc3IrqEnabled = false, mmc3IrqPending = false;
     std::uint8_t mapper40PrgBank = 0;
     std::uint8_t mapper13ChrBank = 0;
+    std::uint8_t mapper71PrgBank = 0;
     std::uint16_t mapper40IrqCounter = 0;
     bool mapper40IrqEnabled = false;
     bool mapper40IrqPending = false;
