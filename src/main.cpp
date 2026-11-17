@@ -464,7 +464,7 @@ int main(int argc, char** argv) {
     audioWant.samples = 1024;
     SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioWant, nullptr, 0);
     if (audioDevice == 0)
-        std::cerr << "Audio device unavailable: " << SDL_GetError() << '\\n';
+        std::cerr << "Audio device unavailable: " << SDL_GetError() << '\n';
     else
         SDL_PauseAudioDevice(audioDevice, 0);
 
