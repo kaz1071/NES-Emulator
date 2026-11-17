@@ -74,12 +74,20 @@ The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapp
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
-## Version 0.28.0\n\n- Added initial NES APU sound with both pulse channels, triangle, and noise. Audio is mixed and streamed through SDL2. DMC playback and cycle-accurate audio timing remain future work.\n\n## Version 0.27.0
+## Version 0.28.0
+
+- Added initial NES APU sound with both pulse channels, triangle, and noise. Audio is mixed and streamed through SDL2. DMC playback and cycle-accurate audio timing remain future work.
+
+## Version 0.27.0
 
 - Rebranded the Linux app as PixelCore - NES.
 - Added a pixel-art controller icon and desktop-app launcher installation.
 
-## Version 0.24.0\n\n- Added selectable rewind history lengths: 3, 5, 10, or 15 seconds. Press **6** while a game is running to cycle the setting; the default is 10 seconds.\n\n## Version 0.23.0
+## Version 0.24.0
+
+- Added selectable rewind history lengths: 3, 5, 10, or 15 seconds. Press **6** while a game is running to cycle the setting; the default is 10 seconds.
+
+## Version 0.23.0
 
 - Added portable-within-this-build `.savestate` files that capture CPU registers/cycles, system RAM, PRG-RAM, controller shift state, PPU registers/memory/render state, CHR-RAM, and supported mapper registers/IRQ state.
 - Save states are checked against the loaded ROM fingerprint and mapper before restoring.
