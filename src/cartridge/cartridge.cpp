@@ -40,6 +40,12 @@ CartridgeState Cartridge::saveState() const {
     state.mapper94PrgBank = mapper94PrgBank;
     state.mapper15Register = mapper15Register;
     state.mapper15Mode = mapper15Mode;
+    state.mapper16ChrBanks = mapper16ChrBanks;
+    state.mapper16PrgBank = mapper16PrgBank;
+    state.mapper16IrqLatch = mapper16IrqLatch;
+    state.mapper16IrqCounter = mapper16IrqCounter;
+    state.mapper16IrqEnabled = mapper16IrqEnabled;
+    state.mapper16IrqPending = mapper16IrqPending;
     state.mmc2ChrBanks = mmc2ChrBanks;
     state.mmc2PrgBank = mmc2PrgBank;
     state.mmc2Latch0Fe = mmc2Latch0Fe;
@@ -104,6 +110,12 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mapper94PrgBank = state.mapper94PrgBank;
     mapper15Register = state.mapper15Register;
     mapper15Mode = state.mapper15Mode;
+    mapper16ChrBanks = state.mapper16ChrBanks;
+    mapper16PrgBank = state.mapper16PrgBank;
+    mapper16IrqLatch = state.mapper16IrqLatch;
+    mapper16IrqCounter = state.mapper16IrqCounter;
+    mapper16IrqEnabled = state.mapper16IrqEnabled;
+    mapper16IrqPending = state.mapper16IrqPending;
     mmc2ChrBanks = state.mmc2ChrBanks;
     mmc2PrgBank = state.mmc2PrgBank;
     mmc2Latch0Fe = state.mmc2Latch0Fe;
@@ -168,10 +180,20 @@ bool Cartridge::prgRamWritable() const {
 bool Cartridge::irqPending() const {
     return (mapper == 4 && mmc3IrqPending) ||
            (mapper == 40 && mapper40IrqPending) ||
-           (mapper == 5 && mmc5IrqEnabled && mmc5IrqPending);
+           (mapper == 5 && mmc5IrqEnabled && mmc5IrqPending) ||
+           (mapper == 16 && mapper16IrqPending);
 }
 
 void Cartridge::clockCpuCycle() {
+    if (mapper == 16 && mapper16IrqEnabled) {
+        if (mapper16IrqCounter == 0) {
+            mapper16IrqCounter = 0xFFFF;
+            mapper16IrqPending = true;
+            mapper16IrqEnabled = false;
+        } else {
+            --mapper16IrqCounter;
+        }
+    }
     if (mapper == 40 && mapper40IrqEnabled) {
         ++mapper40IrqCounter;
         if (mapper40IrqCounter >= 4096) {
@@ -293,7 +315,14 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
             slot == 3 ? (mapper40PrgBank & 7) : 7;
         return prgRom[(bank % count) * 0x2000 + (address & 0x1FFF)];
     }
-    if (mapper == 15) {
+    if (mapper == 16) {
+        const std::size_t count = prgRom.size() / PRG_BANK_SIZE;
+        if (count < 2) return 0;
+        const std::size_t bank = address < 0xC000
+            ? static_cast<std::size_t>(mapper16PrgBank) % count
+            : count - 1;
+        offset = bank * PRG_BANK_SIZE + (address & 0x3FFF);
+    } else if (mapper == 15) {
         const std::size_t count = prgRom.size() / 0x2000;
         if (!count) return 0;
         const std::size_t data = mapper15Register;
@@ -469,6 +498,29 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
         }
         return;
     }
+    if (mapper == 16) {
+        if (address < 0x6000) return;
+        const std::uint8_t reg = static_cast<std::uint8_t>(address & 0x0F);
+        if (reg <= 7) mapper16ChrBanks[reg] = value;
+        else if (reg == 8) mapper16PrgBank = value & 0x0F;
+        else if (reg == 9 && mirroring != Mirroring::FourScreen) {
+            switch (value & 3) {
+                case 0: mirroring = Mirroring::Vertical; break;
+                case 1: mirroring = Mirroring::Horizontal; break;
+                case 2: mirroring = Mirroring::OneScreenLower; break;
+                default: mirroring = Mirroring::OneScreenUpper; break;
+            }
+        } else if (reg == 0x0A) {
+            mapper16IrqCounter = mapper16IrqLatch;
+            mapper16IrqEnabled = (value & 1) != 0;
+            mapper16IrqPending = false;
+        } else if (reg == 0x0B) {
+            mapper16IrqLatch = static_cast<std::uint16_t>((mapper16IrqLatch & 0xFF00) | value);
+        } else if (reg == 0x0C) {
+            mapper16IrqLatch = static_cast<std::uint16_t>((mapper16IrqLatch & 0x00FF) | (static_cast<std::uint16_t>(value) << 8));
+        }
+        return;
+    }
     if (address < 0x8000) return;
     if (mapper == 15) {
         mapper15Register = value;
@@ -613,6 +665,14 @@ std::uint8_t Cartridge::readChr(std::uint16_t address) const {
     if (chrData.empty() || address >= 0x2000) return 0;
     std::size_t offset = address;
     if (mapper == 5) return readMmc5Chr(address, false);
+    if (mapper == 16) {
+        const std::size_t count = chrData.size() / 0x400;
+        if (!count) return 0;
+        const std::size_t slot = address / 0x400;
+        const std::size_t bank = static_cast<std::size_t>(mapper16ChrBanks[slot]) % count;
+        offset = bank * 0x400 + (address & 0x03FF);
+        return chrData[offset % chrData.size()];
+    }
     if (mapper == 13) {
         const std::size_t bank = address < 0x1000 ? 0 : mapper13ChrBank;
         offset = bank * 0x1000 + (address & 0x0FFF);
@@ -687,7 +747,13 @@ void Cartridge::writeChr(std::uint16_t address, std::uint8_t value) {
     if (!usesChrRam || address >= 0x2000 || chrData.empty()) return;
     if (mapper == 15 && (mapper15Mode == 0 || mapper15Mode == 3)) return;
     std::size_t offset = address;
-    if (mapper == 13) {
+    if (mapper == 16) {
+        const std::size_t count = chrData.size() / 0x400;
+        if (!count) return;
+        const std::size_t slot = address / 0x400;
+        const std::size_t bank = static_cast<std::size_t>(mapper16ChrBanks[slot]) % count;
+        offset = bank * 0x400 + (address & 0x03FF);
+    } else if (mapper == 13) {
         const std::size_t bank = address < 0x1000 ? 0 : mapper13ChrBank;
         offset = bank * 0x1000 + (address & 0x0FFF);
     } else if (mapper == 9 || mapper == 10) {
@@ -771,7 +837,7 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::uint8_t mapper =
         static_cast<std::uint8_t>((flags6 >> 4) | (flags7 & 0xF0));
 
-    if (mapper != 0 && mapper != 1 && mapper != 2 && mapper != 3 && mapper != 4 && mapper != 5 && mapper != 7 && mapper != 9 && mapper != 10 && mapper != 11 && mapper != 13 && mapper != 40 && mapper != 71 && mapper != 94 && mapper != 66 && mapper != 15) {
+    if (mapper != 0 && mapper != 1 && mapper != 2 && mapper != 3 && mapper != 4 && mapper != 5 && mapper != 7 && mapper != 9 && mapper != 10 && mapper != 11 && mapper != 13 && mapper != 16 && mapper != 40 && mapper != 71 && mapper != 94 && mapper != 66 && mapper != 15) {
         error = "Unsupported mapper " + std::to_string(mapper) +
                 ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 9 (MMC2), mapper 10 (MMC4), mapper 11 (Color Dreams), mapper 13 (CPROM), mapper 40 (NTDEC 2722), mapper 66 (GxROM), mapper 71 (Camerica), and mapper 94 (UN1ROM), and mapper 15 (100-in-1 Contra Function 16).";
         return false;
@@ -782,6 +848,11 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::size_t chrSize =
         static_cast<std::size_t>(bytes[5]) * CHR_BANK_SIZE;
 
+    if (mapper == 16 &&
+        (prgSize < 32 * 1024 || prgSize > 256 * 1024 || prgSize % (16 * 1024) != 0 || chrSize > 128 * 1024)) {
+        error = "Mapper 16 requires 32 to 256 KiB of PRG-ROM and no more than 128 KiB of CHR-ROM.";
+        return false;
+    }
     if (mapper == 15 &&
         (prgSize < 32 * 1024 || prgSize > 1024 * 1024 ||
          prgSize % (16 * 1024) != 0 || chrSize != 0)) {
