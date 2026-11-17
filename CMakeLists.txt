@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(NES_Emulator VERSION 0.52.0 LANGUAGES CXX)
+project(NES_Emulator VERSION 0.53.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -77,6 +77,11 @@ if(BUILD_TESTING)
     target_include_directories(mapper9-tests PRIVATE src/cartridge)
     target_compile_options(mapper9-tests PRIVATE -Wall -Wextra -Wpedantic)
     add_test(NAME mapper9-tests COMMAND mapper9-tests)
+
+    add_executable(mapper13-tests tests/mapper13_tests.cpp src/cartridge/cartridge.cpp)
+    target_include_directories(mapper13-tests PRIVATE src/cartridge)
+    target_compile_options(mapper13-tests PRIVATE -Wall -Wextra -Wpedantic)
+    add_test(NAME mapper13-tests COMMAND mapper13-tests)
 
     add_executable(mapper11-tests tests/mapper11_tests.cpp src/cartridge/cartridge.cpp)
     target_include_directories(mapper11-tests PRIVATE src/cartridge)
