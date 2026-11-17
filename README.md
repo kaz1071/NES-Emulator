@@ -23,6 +23,7 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] MMC3 (mapper 4) PRG/CHR banking, mirroring, PRG-RAM protection, and approximate scanline IRQ
 - [x] Initial MMC5 (mapper 5) PRG/CHR bank registers and protected cartridge RAM
 - [x] MMC5 vertical split-screen rendering and approximate scanline IRQ, including scanline-zero compares
+- [x] Automated MMC5 IRQ regression tests (scanline compare, status acknowledgement, enable masking, and frame reset)
 - [x] Mapper 40 fixed/switchable PRG banks and CPU-cycle IRQ
 - [x] GxROM (mapper 66) bank switching for up to 128 KiB PRG-ROM and 32 KiB CHR-ROM
 - [x] CHR-ROM loading and CHR-RAM allocation
@@ -59,6 +60,7 @@ git clone https://github.com/kaz1071/PixelCore---NES.git
 cd PixelCore---NES
 cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 cmake --build build -j$(nproc)
+ctest --test-dir build --output-on-failure
 cmake --install build
 ```
 
