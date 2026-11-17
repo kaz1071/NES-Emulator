@@ -97,8 +97,9 @@ std::uint8_t NESBus::read(std::uint16_t address) {
             (address == 0x5204 || address >= 0x5C00)) return cartridge->readPrg(address);
         return 0;
     }
-    if (address < 0x8000 && cartridge != nullptr && cartridge->mapper == 40)
-        return cartridge->readPrg(address);
+    if (address < 0x8000 && cartridge != nullptr &&
+        (cartridge->mapper == 40 || cartridge->mapper == 16))
+        return cartridge->mapper == 40 ? cartridge->readPrg(address) : 0;
     if (address < 0x8000) {
         if (cartridge != nullptr && cartridge->mapper == 5) return cartridge->readPrg(address);
         if (cartridge != nullptr && !cartridge->prgRamEnabled()) return 0;
@@ -137,7 +138,7 @@ void NESBus::write(std::uint16_t address, std::uint8_t value) {
         if ((address >= 0x5000 && address <= 0x5007) || address == 0x5010 || address == 0x5011 || address == 0x5015) apu.writeMmc5(address, value);
         else cartridge->writePrg(address, value);
     } else if (address >= 0x6000 && address < 0x8000) {
-        if (cartridge != nullptr && (cartridge->mapper == 40 || cartridge->mapper == 5)) { cartridge->writePrg(address, value); return; }
+        if (cartridge != nullptr && (cartridge->mapper == 40 || cartridge->mapper == 5 || cartridge->mapper == 16)) { cartridge->writePrg(address, value); return; }
         if (cartridge == nullptr || cartridge->prgRamWritable())
             prgRam[address - 0x6000] = value;
     } else if (address >= 0x8000 && cartridge != nullptr) {
