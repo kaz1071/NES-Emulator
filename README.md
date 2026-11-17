@@ -31,7 +31,7 @@ The project is in early development. It currently includes an SDL2 application, 
 - [ ] Full 6502 instruction and cycle support
 - [ ] Accurate PPU frame timing and cycle-level CPU timing
 - [x] Basic NES controller 1 input (keyboard-mapped)
-- [ ] APU audio
+- [x] Initial NES APU audio: pulse, triangle, and noise channels mixed to SDL2 output\n- [ ] DMC sample playback and cycle-accurate APU timing
 - [ ] Additional cartridge mappers
 
 ## Build on Linux
@@ -69,11 +69,11 @@ Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one
 
 ## Compatibility notes
 
-The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls and audio are not implemented, and some mapper board variants are unsupported.
+The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls are approximate, APU timing is approximate, and DMC sample playback is not implemented, and some mapper board variants are unsupported.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
-## Version 0.27.0
+## Version 0.28.0\n\n- Added initial NES APU sound with both pulse channels, triangle, and noise. Audio is mixed and streamed through SDL2. DMC playback and cycle-accurate audio timing remain future work.\n\n## Version 0.27.0
 
 - Rebranded the Linux app as PixelCore - NES.
 - Added a pixel-art controller icon and desktop-app launcher installation.
