@@ -35,6 +35,8 @@ public:
         std::uint8_t shiftRegister = 0, bitsRemaining = 8;
         bool enabled = false, irqEnabled = false, loop = false, irq = false;
         bool sampleBufferEmpty = true, silence = true;
+        bool dmaPending = false;
+        std::uint16_t dmaAddress = 0;
     };
     struct State {
         PulseState pulse1{}, pulse2{};
@@ -50,7 +52,9 @@ public:
     void reset();
     void write(std::uint16_t address, std::uint8_t value);
     std::uint8_t readStatus();
-    void clock(const std::function<std::uint8_t(std::uint16_t)>& readMemory);
+    void clock();
+    bool consumeDmcDmaRequest(std::uint16_t& address);
+    void completeDmcDma(std::uint8_t value);
     bool irqPending() const { return state.frameIrq || state.dmc.irq; }
     State saveState() const { return state; }
     void loadState(const State& saved);
@@ -69,7 +73,7 @@ private:
     void clockTriangleTimer();
     void clockNoiseTimer();
     double mixedOutput() const;
-    void clockDmc(const std::function<std::uint8_t(std::uint16_t)>& readMemory);
+    void clockDmc();
     std::uint8_t pulseOutput(const PulseState& pulse) const;
     static std::uint8_t lengthValue(std::uint8_t index);
 };
