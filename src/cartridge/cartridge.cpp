@@ -40,6 +40,7 @@ CartridgeState Cartridge::saveState() const {
     state.mapper40IrqPending = mapper40IrqPending;
     state.mmc5PrgRegisters = mmc5PrgRegisters;
     state.mmc5ChrRegisters = mmc5ChrRegisters;
+    state.mmc5BgChrRegisters = mmc5BgChrRegisters;
     state.mmc5PrgRam = mmc5PrgRam;
     state.mmc5PrgMode = mmc5PrgMode;
     state.mmc5ChrMode = mmc5ChrMode;
@@ -92,6 +93,7 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mapper40IrqPending = state.mapper40IrqPending;
     mmc5PrgRegisters = state.mmc5PrgRegisters;
     mmc5ChrRegisters = state.mmc5ChrRegisters;
+    mmc5BgChrRegisters = state.mmc5BgChrRegisters;
     mmc5PrgRam = state.mmc5PrgRam;
     mmc5PrgMode = state.mmc5PrgMode;
     mmc5ChrMode = state.mmc5ChrMode;
@@ -303,6 +305,10 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
             mmc5ChrRegisters[address - 0x5120] = value;
             return;
         }
+        if (address >= 0x5128 && address <= 0x512B) {
+            mmc5BgChrRegisters[address - 0x5128] = value;
+            return;
+        }
         return;
     }
     if (mapper == 40) {
@@ -399,17 +405,32 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
     }
 }
 
+std::uint8_t Cartridge::readMmc5Chr(std::uint16_t address, bool background) const {
+    if (mapper != 5 || chrData.empty() || address >= 0x2000) return 0;
+    const std::size_t count = chrData.size() / 0x400;
+    if (count == 0) return 0;
+
+    const std::size_t slot = address / 0x400;
+    const std::size_t groupSize = std::size_t{1} << (3 - (mmc5ChrMode & 3));
+    const std::size_t registerCount = background ? 4 : 8;
+    const std::size_t registerSlot = background ? slot % 4 : slot;
+    const std::size_t registerIndex =
+        std::min(registerCount - 1,
+                 ((registerSlot / groupSize) + 1) * groupSize - 1);
+    const auto& registers = background ? mmc5BgChrRegisters : mmc5ChrRegisters;
+    const std::size_t bankBase =
+        ((static_cast<std::size_t>(mmc5ChrHigh) << 8) |
+         registers[registerIndex]) & ~(groupSize - 1);
+    const std::size_t bank = (bankBase + (registerSlot % groupSize)) % count;
+    const std::size_t offset = bank * 0x400 + (address & 0x03FF);
+    return chrData[offset % chrData.size()];
+}
+
 std::uint8_t Cartridge::readChr(std::uint16_t address) const {
     if (chrData.empty() || address >= 0x2000) return 0;
     std::size_t offset = address;
-    if (mapper == 5) {
-        const std::size_t count = chrData.size() / 0x400;
-        if (!count) return 0;
-        const std::size_t slot = address / 0x400;
-        const std::size_t bank = ((static_cast<std::size_t>(mmc5ChrHigh) << 8) |
-                                  mmc5ChrRegisters[slot]) % count;
-        offset = bank * 0x400 + (address & 0x03FF);
-    } else if (mapper == 1) {
+    if (mapper == 5) return readMmc5Chr(address, false);
+    if (mapper == 1) {
         const std::size_t count = chrData.size() / 0x1000;
         if (!count) return 0;
         if (mmc1Control & 0x10) {
@@ -468,8 +489,13 @@ void Cartridge::writeChr(std::uint16_t address, std::uint8_t value) {
         const std::size_t count = chrData.size() / 0x400;
         if (!count) return;
         const std::size_t slot = address / 0x400;
-        const std::size_t bank = ((static_cast<std::size_t>(mmc5ChrHigh) << 8) |
-                                  mmc5ChrRegisters[slot]) % count;
+        const std::size_t groupSize = std::size_t{1} << (3 - (mmc5ChrMode & 3));
+        const std::size_t registerIndex =
+            std::min<std::size_t>(7, ((slot / groupSize) + 1) * groupSize - 1);
+        const std::size_t bankBase =
+            ((static_cast<std::size_t>(mmc5ChrHigh) << 8) |
+             mmc5ChrRegisters[registerIndex]) & ~(groupSize - 1);
+        const std::size_t bank = (bankBase + (slot % groupSize)) % count;
         offset = bank * 0x400 + (address & 0x03FF);
     } else if (mapper == 1) {
         const std::size_t count = chrData.size() / 0x1000;
