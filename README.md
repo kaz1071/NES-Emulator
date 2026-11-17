@@ -32,7 +32,8 @@ The project is in early development. It currently includes an SDL2 application, 
 - [ ] Accurate PPU frame timing and cycle-level CPU timing
 - [x] Basic NES controller 1 input (keyboard-mapped)
 - [x] Initial NES APU audio: pulse, triangle, and noise channels mixed to SDL2 output
-- [ ] DMC sample playback and cycle-accurate APU timing
+- [x] Initial DMC sample playback, looping, and IRQ support
+- [ ] Cycle-accurate DMC DMA stalls and APU timing
 - [ ] Additional cartridge mappers
 
 ## Build on Linux
@@ -70,9 +71,13 @@ Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one
 
 ## Compatibility notes
 
-The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls are approximate, APU timing is approximate, and DMC sample playback is not implemented, and some mapper board variants are unsupported.
+The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 4 (MMC3), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls are approximate, APU timing is approximate, and DMC DMA stall timing is not cycle-accurate, and some mapper board variants are unsupported.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
+
+## Version 0.29.0
+
+- Added initial DMC sample playback with configurable rate, looping, status reporting, and IRQ generation. DMC DMA CPU stall timing remains future work.
 
 ## Version 0.28.0
 
