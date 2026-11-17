@@ -86,6 +86,7 @@ struct Cartridge {
     std::uint8_t readPrg(std::uint16_t address) const;
     void writePrg(std::uint16_t address, std::uint8_t value);
     std::uint8_t readChr(std::uint16_t address) const;
+    std::uint8_t readMmc5ExtendedChr(std::uint16_t address, std::uint8_t bank) const;
     void writeChr(std::uint16_t address, std::uint8_t value);
 };
 
