@@ -306,8 +306,43 @@ void drawMenuButtons(SDL_Renderer* renderer, int width, int height) {
 
 using PreloadedRom = std::pair<std::string, std::filesystem::path>;
 
+std::filesystem::path executableDirectory() {
+    std::array<char, 4096> path{};
+    const ssize_t length = readlink("/proc/self/exe", path.data(), path.size() - 1);
+    if (length <= 0) return {};
+    return std::filesystem::path(std::string(path.data(),
+        static_cast<std::size_t>(length))).parent_path();
+}
+
+std::filesystem::path userRomDirectory() {
+    if (const char* overrideDir = std::getenv("PIXELCORE_NES_ROM_DIR");
+        overrideDir && *overrideDir)
+        return overrideDir;
+
+    std::filesystem::path dataHome;
+    if (const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
+        xdgDataHome && *xdgDataHome) {
+        dataHome = xdgDataHome;
+    } else if (const char* home = std::getenv("HOME"); home && *home) {
+        dataHome = std::filesystem::path(home) / ".local" / "share";
+    }
+    if (!dataHome.empty())
+        return dataHome / "pixelcore-nes" / "roms";
+    return {};
+}
+
 std::vector<PreloadedRom> findPreloadedRoms() {
-    const auto folder = std::filesystem::current_path() / "roms";
+    std::vector<std::filesystem::path> folders;
+    const auto userFolder = userRomDirectory();
+    if (!userFolder.empty()) folders.push_back(userFolder);
+
+    // Installed builds keep optional ROMs beside the app's shared data.
+    const auto exeDir = executableDirectory();
+    if (!exeDir.empty()) {
+        folders.push_back(exeDir.parent_path() / "share" / "pixelcore-nes" / "roms");
+        // Also support a source checkout with its executable in build/.
+        folders.push_back(exeDir.parent_path().parent_path() / "roms");
+    }
     const std::array<std::pair<const char*, const char*>, 5> games{{
         {"ZELDA", "Legend of Zelda, The (USA) (Rev 1).nes"},
         {"MARIO DUCK HUNT", "Super Mario Bros. + Duck Hunt (USA).nes"},
@@ -317,10 +352,14 @@ std::vector<PreloadedRom> findPreloadedRoms() {
     }};
     std::vector<PreloadedRom> found;
     for (const auto& game : games) {
-        const auto path = folder / game.second;
-        std::error_code error;
-        if (std::filesystem::is_regular_file(path, error))
-            found.emplace_back(game.first, path);
+        for (const auto& folder : folders) {
+            const auto path = folder / game.second;
+            std::error_code error;
+            if (std::filesystem::is_regular_file(path, error)) {
+                found.emplace_back(game.first, path);
+                break;
+            }
+        }
     }
     return found;
 }
