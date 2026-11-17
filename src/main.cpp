@@ -494,7 +494,7 @@ int main(int argc, char** argv) {
         std::cout << "No ROM loaded. Choose LOAD ROM or PRELOADED ROMS to start a game.\n";
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << '\n';
         return 1;
     }
@@ -504,18 +504,47 @@ int main(int argc, char** argv) {
     audioWant.channels = 1;
     audioWant.samples = 1024;
     SDL_AudioSpec audioHave{};
-    std::cerr << "Audio init: SDL driver="
-              << (SDL_GetCurrentAudioDriver() ? SDL_GetCurrentAudioDriver() : "none")
-              << ", requesting " << audioWant.freq << " Hz mono S16\n";
-    SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioWant, &audioHave, 0);
+    SDL_AudioDeviceID audioDevice = 0;
+    std::string audioFailure;
+    const int audioDriverCount = SDL_GetNumAudioDrivers();
+    std::cerr << "Audio init: SDL compiled audio drivers=" << audioDriverCount << '\n';
+
+    // Try each audio backend compiled into SDL. The default Linux backend
+    // may be unavailable even when another backend (such as ALSA) works.
+    for (int i = 0; i < audioDriverCount && audioDevice == 0; ++i) {
+        const char* driver = SDL_GetAudioDriver(i);
+        if (!driver) continue;
+        std::cerr << "Audio: trying SDL driver '" << driver << "'...\n";
+        SDL_AudioQuit();
+        if (SDL_AudioInit(driver) != 0) {
+            audioFailure = SDL_GetError();
+            std::cerr << "Audio: driver '" << driver << "' initialization failed: "
+                      << (audioFailure.empty() ? "(SDL supplied no error text)" : audioFailure)
+                      << '\n';
+            continue;
+        }
+        audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioWant, &audioHave, 0);
+        if (audioDevice == 0) {
+            audioFailure = SDL_GetError();
+            std::cerr << "Audio: driver '" << driver << "' could not open an output device: "
+                      << (audioFailure.empty() ? "(SDL supplied no error text)" : audioFailure)
+                      << '\n';
+        } else {
+            std::cerr << "Audio device opened: driver=" << driver << ", "
+                      << audioHave.freq << " Hz, "
+                      << static_cast<int>(audioHave.channels)
+                      << " channel(s), format=0x" << std::hex << audioHave.format
+                      << std::dec << ", device=" << audioDevice << '\n';
+            SDL_PauseAudioDevice(audioDevice, 0);
+        }
+    }
     if (audioDevice == 0) {
-        std::cerr << "Audio device unavailable: " << SDL_GetError() << '\n';
-    } else {
-        std::cerr << "Audio device opened: " << audioHave.freq << " Hz, "
-                  << static_cast<int>(audioHave.channels) << " channel(s), format=0x"
-                  << std::hex << audioHave.format << std::dec
-                  << ", device=" << audioDevice << '\n';
-        SDL_PauseAudioDevice(audioDevice, 0);
+        std::cerr << "Audio unavailable: tried " << audioDriverCount
+                  << " SDL audio driver(s). Last error: "
+                  << (audioFailure.empty() ? "(SDL supplied no error text)" : audioFailure)
+                  << '\n';
+        std::cerr << "On Linux, check that an audio server is running and that "
+                     "the user session has access to it.\n";
     }
 
     SDL_Window* window = SDL_CreateWindow(windowTitle.c_str(), SDL_WINDOWPOS_CENTERED,
