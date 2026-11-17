@@ -38,8 +38,13 @@ public:
         bool dmaPending = false, dmaInProgress = false;
         std::uint16_t dmaAddress = 0;
     };
+    struct Mmc5PcmState {
+        std::uint8_t output = 0;
+        bool readMode = false, irqEnabled = false, irq = false;
+    };
     struct State {
         std::array<PulseState, 2> mmc5Pulse{};
+        Mmc5PcmState mmc5Pcm{};
         PulseState pulse1{}, pulse2{};
         TriangleState triangle{};
         NoiseState noise{};
@@ -56,11 +61,13 @@ public:
     void write(std::uint16_t address, std::uint8_t value);
     void writeMmc5(std::uint16_t address, std::uint8_t value);
     std::uint8_t readMmc5Status() const;
+    std::uint8_t readMmc5PcmStatus();
+    void mmc5PcmRead(std::uint8_t value);
     std::uint8_t readStatus();
     void clock();
     bool consumeDmcDmaRequest(std::uint16_t& address);
     void completeDmcDma(std::uint8_t value);
-    bool irqPending() const { return state.frameIrq || state.dmc.irq; }
+    bool irqPending() const { return state.frameIrq || state.dmc.irq || state.mmc5Pcm.irq; }
     State saveState() const { return state; }
     void loadState(const State& saved);
     std::vector<std::int16_t> takeSamples();
