@@ -259,7 +259,7 @@ void NESAPU::clock() {
     state.sampleAccumulator += SAMPLE_RATE;
     if (state.sampleAccumulator >= CPU_FREQUENCY) {
         state.sampleAccumulator -= CPU_FREQUENCY;
-        const double sample = (mixedOutput() * 2.0 - 1.0) * 12000.0;
+        const double sample = mixedOutput() * 24000.0;
         samples.push_back(static_cast<std::int16_t>(sample));
     }
 }
