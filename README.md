@@ -2,7 +2,7 @@
 
 A custom NES emulator built from scratch in C++ using SDL2, designed for Linux. PixelCore is the umbrella name for a planned family of emulators.
 
-The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
+The project is in early development. It currently includes an SDL2 application, a ROM file picker, an iNES cartridge loader for NROM (mapper 0), MMC1 (mapper 1), UxROM (mapper 2), CNROM (mapper 3), MMC3 (mapper 4), AxROM (mapper 7), NTDEC 2722 (mapper 40), MMC5 (mapper 5, initial banking), and GxROM (mapper 66), an experimental 6502 CPU, and a scanline-based PPU renderer.
 
 ## Current status
 
@@ -21,6 +21,7 @@ The project is in early development. It currently includes an SDL2 application, 
 - [x] CNROM (mapper 3) fixed PRG-ROM with switchable 8 KiB CHR-ROM banks
 - [x] AxROM (mapper 7) switchable 32 KiB PRG-ROM banks and one-screen mirroring control
 - [x] MMC3 (mapper 4) PRG/CHR banking, mirroring, PRG-RAM protection, and approximate scanline IRQ
+- [x] Initial MMC5 (mapper 5) PRG/CHR bank registers and protected cartridge RAM
 - [x] Mapper 40 fixed/switchable PRG banks and CPU-cycle IRQ
 - [x] GxROM (mapper 66) bank switching for up to 128 KiB PRG-ROM and 32 KiB CHR-ROM
 - [x] CHR-ROM loading and CHR-RAM allocation
@@ -76,9 +77,13 @@ Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one
 
 ## Compatibility notes
 
-The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 7 (AxROM), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. UxROM switches the lower 16 KiB PRG window while keeping the final PRG bank fixed in the upper window. CNROM keeps 16 or 32 KiB of PRG-ROM fixed and switches among up to four 8 KiB CHR-ROM banks; CHR-RAM cartridges remain supported without CHR banking. AxROM switches among 32 KiB PRG-ROM banks and selects lower or upper single-screen mirroring; this implementation expects CHR-RAM. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls are approximate, APU timing is approximate, and DMC DMA uses an approximate 3/4-cycle CPU stall rather than full bus-cycle arbitration, and some mapper board variants are unsupported.
+The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 40 (NTDEC 2722), and mapper 66 (GxROM). MMC1 includes serial register writes, PRG/CHR banking, and one-screen mirroring. MMC3 includes 8 KiB PRG banking, 1 KiB CHR banking, mirroring control, PRG-RAM protection, and an approximate scanline IRQ path. Mapper 40 includes its fixed PRG windows, switchable 8 KiB bank, and approximate 4,096-CPU-cycle IRQ. GxROM includes 32 KiB PRG and 8 KiB CHR bank switching. UxROM switches the lower 16 KiB PRG window while keeping the final PRG bank fixed in the upper window. CNROM keeps 16 or 32 KiB of PRG-ROM fixed and switches among up to four 8 KiB CHR-ROM banks; CHR-RAM cartridges remain supported without CHR banking. AxROM switches among 32 KiB PRG-ROM banks and selects lower or upper single-screen mirroring; this implementation expects CHR-RAM. MMC5 support is currently banking-only: extended nametable modes, ExRAM, split-screen rendering, fill mode, expansion audio, and scanline IRQ are not implemented. NES 2.0 headers and other mappers are not supported. A ROM that loads successfully is not necessarily fully playable: CPU instruction timing is not cycle-accurate, PPU rendering and MMC3 IRQ timing are approximate, OAM DMA stalls are approximate, APU timing is approximate, and DMC DMA uses an approximate 3/4-cycle CPU stall rather than full bus-cycle arbitration, and some mapper board variants are unsupported.
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
+
+## Version 0.37.0
+
+- Added initial MMC5 (mapper 5) PRG/CHR bank registers and protected cartridge RAM. Advanced MMC5 video, ExRAM, IRQ, and audio features remain unsupported.
 
 ## Version 0.36.0
 
