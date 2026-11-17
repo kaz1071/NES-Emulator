@@ -94,6 +94,19 @@ int main() {
     expect(cartridge.readPrg(0x6000) == 0xB7,
            "MMC5 PRG-RAM protection blocks writes but permits reads");
 
+    // MMC5 hardware multiplier: operands are written independently and
+    // the 16-bit product is exposed through $5205 (low) and $5206 (high).
+    cartridge.writePrg(0x5205, 15);
+    cartridge.writePrg(0x5206, 17);
+    expect(cartridge.readPrg(0x5205) == 0xFF &&
+           cartridge.readPrg(0x5206) == 0x00,
+           "MMC5 multiplier returns the low and high product bytes");
+    cartridge.writePrg(0x5205, 0xFF);
+    cartridge.writePrg(0x5206, 0xFF);
+    expect(cartridge.readPrg(0x5205) == 0x01 &&
+           cartridge.readPrg(0x5206) == 0xFE,
+           "MMC5 multiplier preserves a full 16-bit product");
+
     const CartridgeState saved = cartridge.saveState();
     Cartridge restored{};
     fillPrgBanks(restored);
@@ -102,6 +115,9 @@ int main() {
            "MMC5 PRG-RAM mapping survives save-state restoration");
     expect(restored.readPrg(0x6000) == 0xB7,
            "banked $6000 PRG-RAM survives save-state restoration");
+    expect(restored.readPrg(0x5205) == 0x01 &&
+           restored.readPrg(0x5206) == 0xFE,
+           "MMC5 multiplier operands survive save-state restoration");
 
     if (failures != 0) {
         std::cerr << failures << " MMC5 PRG test(s) failed\n";
