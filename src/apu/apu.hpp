@@ -45,6 +45,8 @@ public:
         DmcState dmc{};
         std::uint32_t frameCycle = 0;
         std::uint32_t sampleAccumulator = 0;
+        std::uint8_t frameResetDelay = 0;
+        bool pendingFiveStep = false;
         bool fiveStep = false, irqInhibit = false, frameIrq = false;
         bool evenCycle = false;
     };
