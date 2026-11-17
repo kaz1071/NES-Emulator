@@ -759,17 +759,24 @@ int main(int argc, char** argv) {
                       << std::dec << '\n';
 
             const auto& oam = bus.ppuOamDebug();
-            std::cout << "Visible sprites (index:y/tile/attr/x; B=behind):";
+            const int debugScanline = bus.ppuScanlineDebug();
+            const int debugSpriteHeight = (bus.ppuControlDebug() & 0x20) ? 16 : 8;
+            std::cout << "Sprite emergence debug (index:top-bottom/tile/attr/x; *=covers current scanline):";
             for (std::size_t s = 0; s < 64; ++s) {
-                const std::uint8_t sy = oam[s * 4];
+                const std::uint8_t oamY = oam[s * 4];
                 const std::uint8_t tile = oam[s * 4 + 1];
                 const std::uint8_t attr = oam[s * 4 + 2];
                 const std::uint8_t sx = oam[s * 4 + 3];
-                if (sy >= 0xEF ||
-                    (sy == 0 && tile == 0 && attr == 0 && sx == 0)) continue;
-                std::cout << " [" << std::dec << s << ":$" << std::hex
-                          << static_cast<int>(sy) << "/$" << static_cast<int>(tile)
-                          << "/$" << static_cast<int>(attr) << "/$" << static_cast<int>(sx)
+                if (oamY >= 0xEF ||
+                    (oamY == 0 && tile == 0 && attr == 0 && sx == 0)) continue;
+                const int top = static_cast<int>(oamY) + 1;
+                const int bottom = top + debugSpriteHeight - 1;
+                const bool coversScanline = debugScanline >= top && debugScanline <= bottom;
+                std::cout << " [" << std::dec << s << ":"
+                          << top << "-" << bottom << "/$" << std::hex
+                          << static_cast<int>(tile) << "/$" << static_cast<int>(attr)
+                          << "/$" << static_cast<int>(sx)
+                          << (coversScanline ? "*" : "")
                           << ((attr & 0x20) ? ",B" : "") << "]";
             }
             std::cout << std::dec << '\n';
