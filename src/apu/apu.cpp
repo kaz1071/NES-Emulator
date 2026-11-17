@@ -141,6 +141,24 @@ void NESAPU::write(std::uint16_t address, std::uint8_t value) {
     }
 }
 
+void NESAPU::writeMmc5(std::uint16_t address, std::uint8_t value) {
+    if (address == 0x5015) {
+        for (std::size_t i = 0; i < state.mmc5Pulse.size(); ++i) { auto& p = state.mmc5Pulse[i]; p.enabled = (value & (1u << i)) != 0; if (!p.enabled) p.length = 0; }
+        return;
+    }
+    if (address < 0x5000 || address > 0x5007) return;
+    const std::size_t channel = address >= 0x5004 ? 1 : 0;
+    auto& p = state.mmc5Pulse[channel];
+    switch (address & 3) {
+        case 0: p.duty = value >> 6; p.envelopeLoop = (value & 0x20) != 0; p.constantVolume = (value & 0x10) != 0; p.envelopePeriod = value & 0x0F; break;
+        case 1: break;
+        case 2: p.timer = static_cast<std::uint16_t>((p.timer & 0x0700) | value); break;
+        case 3: p.timer = static_cast<std::uint16_t>((p.timer & 0x00FF) | ((value & 7) << 8)); if (p.enabled) p.length = lengthValue(value >> 3); p.sequence = 0; p.envelopeStart = true; break;
+    }
+}
+
+std::uint8_t NESAPU::readMmc5Status() const { return static_cast<std::uint8_t>((state.mmc5Pulse[0].length ? 1 : 0) | (state.mmc5Pulse[1].length ? 2 : 0)); }
+
 std::uint8_t NESAPU::readStatus() {
     std::uint8_t result = 0;
     if (state.pulse1.length) result |= 0x01;
@@ -181,6 +199,7 @@ void NESAPU::clockEnvelope(NoiseState& n) {
 void NESAPU::quarterFrame() {
     clockEnvelope(state.pulse1);
     clockEnvelope(state.pulse2);
+    for (auto& pulse : state.mmc5Pulse) clockEnvelope(pulse);
     clockEnvelope(state.noise);
     auto& t = state.triangle;
     if (t.reloadFlag) t.linearCounter = t.linearReload;
@@ -208,6 +227,7 @@ void NESAPU::halfFrame() {
     };
     lengthClock(state.pulse1, state.pulse1.envelopeLoop);
     lengthClock(state.pulse2, state.pulse2.envelopeLoop);
+    for (auto& pulse : state.mmc5Pulse) lengthClock(pulse, pulse.envelopeLoop);
     lengthClock(state.triangle, state.triangle.control);
     lengthClock(state.noise, state.noise.envelopeLoop);
     clockSweep(state.pulse1, true);
@@ -219,6 +239,11 @@ void NESAPU::clockPulseTimer(PulseState& p) {
         p.timerCounter = p.timer;
         p.sequence = (p.sequence + 1) & 7;
     } else --p.timerCounter;
+}
+
+void NESAPU::clockMmc5Pulse(PulseState& p) {
+    if (p.timerCounter == 0) { p.timerCounter = p.timer; p.sequence = (p.sequence + 1) & 7; }
+    else --p.timerCounter;
 }
 
 void NESAPU::clockTriangleTimer() {
@@ -247,8 +272,14 @@ std::uint8_t NESAPU::pulseOutput(const PulseState& p) const {
     return p.constantVolume ? p.envelopePeriod : p.envelopeDecay;
 }
 
+std::uint8_t NESAPU::mmc5PulseOutput(const PulseState& p) const {
+    if (!p.enabled || p.length == 0 || p.timer < 8 || p.timer > 0x7FF) return 0;
+    if ((DUTY_BITS[p.duty] & (1u << p.sequence)) == 0) return 0;
+    return p.constantVolume ? p.envelopePeriod : p.envelopeDecay;
+}
+
 double NESAPU::mixedOutput() const {
-    const int pulseSum = pulseOutput(state.pulse1) + pulseOutput(state.pulse2);
+    const int pulseSum = pulseOutput(state.pulse1) + pulseOutput(state.pulse2) + mmc5PulseOutput(state.mmc5Pulse[0]) + mmc5PulseOutput(state.mmc5Pulse[1]);
     const double pulse = pulseSum == 0 ? 0.0 :
         95.88 / (8128.0 / pulseSum + 100.0);
     const auto& t = state.triangle;
@@ -297,6 +328,7 @@ void NESAPU::clock() {
     if (state.evenCycle) {
         clockPulseTimer(state.pulse1);
         clockPulseTimer(state.pulse2);
+        for (auto& pulse : state.mmc5Pulse) clockMmc5Pulse(pulse);
         clockNoiseTimer();
     }
     clockTriangleTimer();
