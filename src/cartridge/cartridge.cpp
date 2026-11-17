@@ -51,6 +51,9 @@ CartridgeState Cartridge::saveState() const {
     state.mmc5ExRamMode = mmc5ExRamMode;
     state.mmc5FillTile = mmc5FillTile;
     state.mmc5FillAttribute = mmc5FillAttribute;
+    state.mmc5VerticalSplit = mmc5VerticalSplit;
+    state.mmc5VerticalSplitScroll = mmc5VerticalSplitScroll;
+    state.mmc5VerticalSplitBank = mmc5VerticalSplitBank;
     state.usesChrRam = usesChrRam;
     if (usesChrRam) {
         const std::size_t count = std::min(chrData.size(), state.chrRam.size());
@@ -95,6 +98,9 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mmc5ExRamMode = state.mmc5ExRamMode;
     mmc5FillTile = state.mmc5FillTile;
     mmc5FillAttribute = state.mmc5FillAttribute;
+    mmc5VerticalSplit = state.mmc5VerticalSplit;
+    mmc5VerticalSplitScroll = state.mmc5VerticalSplitScroll;
+    mmc5VerticalSplitBank = state.mmc5VerticalSplitBank;
     if (usesChrRam) {
         const std::size_t count = std::min(chrData.size(), state.chrRam.size());
         std::copy_n(state.chrRam.begin(), count, chrData.begin());
@@ -240,6 +246,9 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
         if (address == 0x5106) { mmc5FillTile = value; return; }
         if (address == 0x5107) { mmc5FillAttribute = value & 3; return; }
         if (address == 0x5130) { mmc5ChrHigh = value & 3; return; }
+        if (address == 0x5200) { mmc5VerticalSplit = value; return; }
+        if (address == 0x5201) { mmc5VerticalSplitScroll = value; return; }
+        if (address == 0x5202) { mmc5VerticalSplitBank = value; return; }
         if (address >= 0x5113 && address <= 0x5117) {
             mmc5PrgRegisters[address - 0x5113] = value;
             return;
@@ -393,6 +402,15 @@ std::uint8_t Cartridge::readMmc5ExtendedChr(std::uint16_t address, std::uint8_t 
     if (count == 0) return 0;
     const std::size_t selected = ((static_cast<std::size_t>(mmc5ChrHigh & 3) << 6) |
                                   (bank & 0x3F)) % count;
+    const std::size_t offset = selected * 0x1000 + (address & 0x0FFF);
+    return chrData[offset % chrData.size()];
+}
+
+std::uint8_t Cartridge::readMmc5SplitChr(std::uint16_t address) const {
+    if (mapper != 5 || chrData.empty()) return readChr(address);
+    const std::size_t count = chrData.size() / 0x1000;
+    if (count == 0) return 0;
+    const std::size_t selected = static_cast<std::size_t>(mmc5VerticalSplitBank) % count;
     const std::size_t offset = selected * 0x1000 + (address & 0x0FFF);
     return chrData[offset % chrData.size()];
 }
