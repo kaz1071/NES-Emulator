@@ -66,7 +66,7 @@ Start the emulator from the Chromebook/Linux app launcher by searching for **Pix
 ~/.local/bin/nes-emulator
 ```
 
-The install step adds a pixel-art controller icon and a desktop launcher. The window title is **PixelCore - NES**.
+The install step adds a pixel-art controller icon and a desktop launcher that points to the executable's configured install location. The path is generated from the install prefix on each build, so it is not tied to the developer's home directory. The window title is **PixelCore - NES**.
 
 Click **LOAD ROM** to choose a `.nes` file, choose **DOWNLOAD ROMS** to open one of the linked game pages in your web browser, or place the five supported local game files in `~/.local/share/pixelcore-nes/roms/` and choose **PRELOADED ROMS**. You can override this folder with the `PIXELCORE_NES_ROM_DIR` environment variable. The app also checks the installed shared-data folder and the `roms/` folder in a source checkout, without depending on the directory it was launched from. While a game is running, press **5** to choose a file and save a `.savestate`, press **8** to load a save-state for the currently loaded ROM, or hold **R** to rewind. Press **6** to cycle the rewind buffer through 3, 5, 10, and 15 seconds. The default is 10 seconds. The buffer fills as you play and uses additional memory for longer durations; it is temporary and is not a substitute for a saved state. The preloaded list is ordered as Zelda, Super Mario Bros. + Duck Hunt, Super Mario Bros. 2, The Lost Levels, and Super Mario Bros. 3. The `roms/` folder is ignored by Git, so ROM files are not uploaded to the public repository. Click **QUIT** to close the window; Escape also works. The file picker uses `zenity`, or `kdialog` if that is installed instead. If neither is installed, install Zenity with `sudo apt install zenity`. You can still launch a ROM directly from the terminal:
 
@@ -80,10 +80,9 @@ The cartridge loader currently recognizes mapper 0 (NROM), mapper 1 (MMC1), mapp
 
 The emulator core is being implemented in this repository rather than wrapping an existing emulator.
 
-## Version 0.35.0
+## Version 0.36.0
 
-- Make ROM discovery independent of the launcher's working directory and the developer's home directory. Preloaded ROMs use the per-user XDG data directory, with an environment-variable override and portable install/source-tree fallbacks.
-- Make the desktop launcher resolve `nes-emulator` through the user's executable search path instead of embedding the build user's absolute install path.
+- Make the desktop launcher use the configured install location of `nes-emulator`. CMake generates the path from the install prefix, so it follows each user's own installation instead of assuming a particular home directory or relying on the desktop environment's PATH.
 
 ## Version 0.34.0
 
