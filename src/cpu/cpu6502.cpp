@@ -101,6 +101,21 @@ void CPU6502::clockCpuCycle() {
         bus->clockPpu();
         bus->clockPpu();
         bus->clockPpu();
+
+        // DMC sample fetches temporarily take control of the CPU bus.
+        // The fetch itself plus alignment is modeled as a 3- or 4-cycle stall.
+        std::uint16_t dmcAddress = 0;
+        if (bus->consumeDmcDmaRequest(dmcAddress)) {
+            const int stallCycles = 3 + static_cast<int>(totalCpuCycles & 1U);
+            for (int cycle = 0; cycle < stallCycles; ++cycle) {
+                ++totalCpuCycles;
+                bus->clockCpuCycle();
+                bus->clockPpu();
+                bus->clockPpu();
+                bus->clockPpu();
+            }
+            bus->completeDmcDma(bus->read(dmcAddress));
+        }
     }
 }
 
