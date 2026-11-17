@@ -52,7 +52,7 @@ void NESBus::clockPpu() {
 
 void NESBus::clockCpuCycle() {
     if (cartridge != nullptr) cartridge->clockCpuCycle();
-    apu.clock([this](std::uint16_t address) { return read(address); });
+    apu.clock();
 }
 
 std::vector<std::int16_t> NESBus::takeAudioSamples() {
@@ -144,4 +144,13 @@ bool NESBus::consumeOamDmaRequest(std::uint8_t& page) {
 void NESBus::writeOamDmaByte(std::uint8_t value) {
     // DMA writes through OAMDATA, preserving the current OAMADDR and wraparound.
     ppu.cpuWrite(0x2004, value);
+}
+
+
+bool NESBus::consumeDmcDmaRequest(std::uint16_t& address) {
+    return apu.consumeDmcDmaRequest(address);
+}
+
+void NESBus::completeDmcDma(std::uint8_t value) {
+    apu.completeDmcDma(value);
 }
