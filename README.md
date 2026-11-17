@@ -83,7 +83,7 @@ The emulator core is being implemented in this repository rather than wrapping a
 
 ## Version 0.37.0
 
-- Added initial MMC5 (mapper 5) PRG/CHR bank registers and protected cartridge RAM. MMC5 supports per-nametable CIRAM/ExRAM/fill selection and basic ExRAM access. Extended-attribute rendering, split-screen, IRQ, and expansion audio remain unsupported.
+- Added initial MMC5 (mapper 5) PRG/CHR bank registers and protected cartridge RAM. MMC5 supports per-nametable CIRAM/ExRAM/fill selection, basic ExRAM access, and extended-attribute background rendering with per-tile 4 KB CHR banks and palettes. Split-screen, IRQ, and expansion audio remain unsupported.
 
 ## Version 0.36.0
 
