@@ -35,6 +35,9 @@ struct CartridgeState {
     std::uint8_t mmc5PrgMode = 3, mmc5ChrMode = 3;
     std::uint8_t mmc5RamProtect1 = 0, mmc5RamProtect2 = 0;
     std::uint8_t mmc5ChrHigh = 0;
+    std::array<std::uint8_t, 1024> mmc5ExRam{};
+    std::uint8_t mmc5NametableMap = 0, mmc5ExRamMode = 0;
+    std::uint8_t mmc5FillTile = 0, mmc5FillAttribute = 0;
 };
 
 struct Cartridge {
@@ -68,6 +71,9 @@ struct Cartridge {
     std::uint8_t mmc5PrgMode = 3, mmc5ChrMode = 3;
     std::uint8_t mmc5RamProtect1 = 0, mmc5RamProtect2 = 0;
     std::uint8_t mmc5ChrHigh = 0;
+    std::array<std::uint8_t, 1024> mmc5ExRam{};
+    std::uint8_t mmc5NametableMap = 0, mmc5ExRamMode = 0;
+    std::uint8_t mmc5FillTile = 0, mmc5FillAttribute = 0;
     CartridgeState saveState() const;
     bool loadState(const CartridgeState& state);
     std::uint64_t romFingerprint() const;
