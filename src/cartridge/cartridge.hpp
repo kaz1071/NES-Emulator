@@ -41,6 +41,7 @@ struct CartridgeState {
     std::uint8_t mmc5FillTile = 0, mmc5FillAttribute = 0;
     std::uint8_t mmc5VerticalSplit = 0, mmc5VerticalSplitScroll = 0, mmc5VerticalSplitBank = 0;
     std::uint8_t mmc5IrqCompare = 0, mmc5IrqScanline = 0;
+    std::uint8_t mmc5MultiplyA = 0, mmc5MultiplyB = 0;
     bool mmc5IrqEnabled = false, mmc5IrqPending = false, mmc5InFrame = false;
 };
 
@@ -81,6 +82,7 @@ struct Cartridge {
     std::uint8_t mmc5FillTile = 0, mmc5FillAttribute = 0;
     std::uint8_t mmc5VerticalSplit = 0, mmc5VerticalSplitScroll = 0, mmc5VerticalSplitBank = 0;
     std::uint8_t mmc5IrqCompare = 0, mmc5IrqScanline = 0;
+    std::uint8_t mmc5MultiplyA = 0, mmc5MultiplyB = 0;
     bool mmc5IrqEnabled = false, mmc5IrqPending = false, mmc5InFrame = false;
     CartridgeState saveState() const;
     bool loadState(const CartridgeState& state);
