@@ -726,7 +726,7 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
 
     if (mapper != 0 && mapper != 1 && mapper != 2 && mapper != 3 && mapper != 4 && mapper != 5 && mapper != 7 && mapper != 9 && mapper != 10 && mapper != 11 && mapper != 13 && mapper != 40 && mapper != 71 && mapper != 94 && mapper != 66) {
         error = "Unsupported mapper " + std::to_string(mapper) +
-                ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 9 (MMC2), mapper 10 (MMC4), mapper 11 (Color Dreams), mapper 13 (CPROM), mapper 40 (NTDEC 2722), mapper 66 (GxROM), and mapper 71 (Camerica), and mapper 94 (UN1ROM).";
+                ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 9 (MMC2), mapper 10 (MMC4), mapper 11 (Color Dreams), mapper 13 (CPROM), mapper 40 (NTDEC 2722), mapper 66 (GxROM), mapper 71 (Camerica), and mapper 94 (UN1ROM).";
         return false;
     }
 
