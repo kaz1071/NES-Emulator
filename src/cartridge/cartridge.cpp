@@ -46,6 +46,11 @@ CartridgeState Cartridge::saveState() const {
     state.mmc5RamProtect1 = mmc5RamProtect1;
     state.mmc5RamProtect2 = mmc5RamProtect2;
     state.mmc5ChrHigh = mmc5ChrHigh;
+    state.mmc5ExRam = mmc5ExRam;
+    state.mmc5NametableMap = mmc5NametableMap;
+    state.mmc5ExRamMode = mmc5ExRamMode;
+    state.mmc5FillTile = mmc5FillTile;
+    state.mmc5FillAttribute = mmc5FillAttribute;
     state.usesChrRam = usesChrRam;
     if (usesChrRam) {
         const std::size_t count = std::min(chrData.size(), state.chrRam.size());
@@ -85,6 +90,11 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mmc5RamProtect1 = state.mmc5RamProtect1;
     mmc5RamProtect2 = state.mmc5RamProtect2;
     mmc5ChrHigh = state.mmc5ChrHigh;
+    mmc5ExRam = state.mmc5ExRam;
+    mmc5NametableMap = state.mmc5NametableMap;
+    mmc5ExRamMode = state.mmc5ExRamMode;
+    mmc5FillTile = state.mmc5FillTile;
+    mmc5FillAttribute = state.mmc5FillAttribute;
     if (usesChrRam) {
         const std::size_t count = std::min(chrData.size(), state.chrRam.size());
         std::copy_n(state.chrRam.begin(), count, chrData.begin());
@@ -143,6 +153,7 @@ void Cartridge::clockScanline() {
 
 std::uint8_t Cartridge::readPrg(std::uint16_t address) const {
     if (mapper == 5) {
+        if (address >= 0x5C00 && address < 0x6000) return mmc5ExRam[address & 0x03FF];
         if (address >= 0x6000 && address < 0x8000)
             return mmc5PrgRam[address & 0x1FFF];
         if (address < 0x8000 || prgRom.empty()) return 0;
@@ -212,6 +223,10 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) const {
 
 void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
     if (mapper == 5) {
+        if (address >= 0x5C00 && address < 0x6000) {
+            if (mmc5ExRamMode >= 2) mmc5ExRam[address & 0x03FF] = value;
+            return;
+        }
         if (address >= 0x6000 && address < 0x8000) {
             if (prgRamWritable()) mmc5PrgRam[address & 0x1FFF] = value;
             return;
@@ -220,6 +235,10 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
         if (address == 0x5101) { mmc5ChrMode = value & 3; return; }
         if (address == 0x5102) { mmc5RamProtect1 = value & 3; return; }
         if (address == 0x5103) { mmc5RamProtect2 = value & 3; return; }
+        if (address == 0x5104) { mmc5ExRamMode = value & 3; return; }
+        if (address == 0x5105) { mmc5NametableMap = value; return; }
+        if (address == 0x5106) { mmc5FillTile = value; return; }
+        if (address == 0x5107) { mmc5FillAttribute = value & 3; return; }
         if (address == 0x5130) { mmc5ChrHigh = value & 3; return; }
         if (address >= 0x5113 && address <= 0x5117) {
             mmc5PrgRegisters[address - 0x5113] = value;
