@@ -7,7 +7,7 @@ namespace {
 int failures = 0;
 void check(bool condition, const char* message) {
     if (!condition) {
-        std::cerr << "FAIL: " << message << '\\n';
+        std::cerr << "FAIL: " << message << '\n';
         ++failures;
     }
 }
@@ -62,6 +62,6 @@ int main() {
           "save state restores mapper 15 data and mode");
 
     if (failures) return 1;
-    std::cout << "All mapper 15 tests passed.\\n";
+    std::cout << "All mapper 15 tests passed.\n";
     return 0;
 }
