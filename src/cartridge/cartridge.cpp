@@ -211,9 +211,40 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
         if (address < 0x8000 || prgRom.empty()) return 0;
         const std::size_t count = prgRom.size() / 0x2000;
         if (!count) return 0;
+
         const std::size_t slot = (address - 0x8000) / 0x2000;
-        const std::uint8_t bankReg = mmc5PrgRegisters[slot + 1];
-        const std::size_t bank = bankReg & 0x7F;
+        std::size_t registerIndex = slot + 1;
+        std::size_t groupSize = 1;
+
+        // $5100 selects how the four CPU PRG windows are assembled.
+        // In grouped modes, the final register in each group supplies the
+        // aligned bank number and the lower slots fill the group in order.
+        switch (mmc5PrgMode & 3) {
+            case 0:
+                registerIndex = 4; // One 32 KiB window, selected by $5117.
+                groupSize = 4;
+                break;
+            case 1:
+                registerIndex = slot < 2 ? 2 : 4; // Two 16 KiB windows.
+                groupSize = 2;
+                break;
+            case 2:
+                if (slot < 2) {
+                    registerIndex = 2; // One 16 KiB window.
+                    groupSize = 2;
+                } else {
+                    registerIndex = slot == 2 ? 3 : 4; // Two 8 KiB windows.
+                }
+                break;
+            default:
+                registerIndex = slot + 1; // Four independent 8 KiB windows.
+                break;
+        }
+
+        const std::uint8_t bankReg = mmc5PrgRegisters[registerIndex];
+        const std::size_t bankBase =
+            static_cast<std::size_t>(bankReg & 0x7F) & ~(groupSize - 1);
+        const std::size_t bank = bankBase + (slot % groupSize);
         if ((bankReg & 0x80) == 0)
             return mmc5PrgRam[(bank * 0x2000 + (address & 0x1FFF)) & 0x1FFF];
         return prgRom[(bank % count) * 0x2000 + (address & 0x1FFF)];
