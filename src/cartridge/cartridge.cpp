@@ -35,6 +35,10 @@ CartridgeState Cartridge::saveState() const {
     state.mmc3IrqEnabled = mmc3IrqEnabled;
     state.mmc3IrqPending = mmc3IrqPending;
     state.mapper40PrgBank = mapper40PrgBank;
+    state.mmc2ChrBanks = mmc2ChrBanks;
+    state.mmc2PrgBank = mmc2PrgBank;
+    state.mmc2Latch0Fe = mmc2Latch0Fe;
+    state.mmc2Latch1Fe = mmc2Latch1Fe;
     state.mapper40IrqCounter = mapper40IrqCounter;
     state.mapper40IrqEnabled = mapper40IrqEnabled;
     state.mapper40IrqPending = mapper40IrqPending;
@@ -90,6 +94,10 @@ bool Cartridge::loadState(const CartridgeState& state) {
     mmc3IrqEnabled = state.mmc3IrqEnabled;
     mmc3IrqPending = state.mmc3IrqPending;
     mapper40PrgBank = state.mapper40PrgBank;
+    mmc2ChrBanks = state.mmc2ChrBanks;
+    mmc2PrgBank = state.mmc2PrgBank;
+    mmc2Latch0Fe = state.mmc2Latch0Fe;
+    mmc2Latch1Fe = state.mmc2Latch1Fe;
     mapper40IrqCounter = state.mapper40IrqCounter;
     mapper40IrqEnabled = state.mapper40IrqEnabled;
     mapper40IrqPending = state.mapper40IrqPending;
@@ -275,7 +283,14 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
             slot == 3 ? (mapper40PrgBank & 7) : 7;
         return prgRom[(bank % count) * 0x2000 + (address & 0x1FFF)];
     }
-    if (mapper == 7) {
+    if (mapper == 9) {
+        const std::size_t count = prgRom.size() / 0x2000;
+        if (count < 4) return 0;
+        const std::size_t slot = offset / 0x2000;
+        const std::size_t bank = slot == 0 ? mmc2PrgBank % count
+            : slot == 1 ? count - 3 : slot == 2 ? count - 2 : count - 1;
+        offset = bank * 0x2000 + (offset & 0x1FFF);
+    } else if (mapper == 7) {
         const std::size_t count = prgRom.size() / GXMROM_PRG_BANK_SIZE;
         if (!count) return 0;
         offset += (static_cast<std::size_t>(prgBank) % count) * GXMROM_PRG_BANK_SIZE;
@@ -389,6 +404,18 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
         return;
     }
     if (address < 0x8000) return;
+    if (mapper == 9) {
+        if (address >= 0xA000 && address <= 0xAFFF) mmc2PrgBank = value & 0x0F;
+        else if (address >= 0xB000 && address <= 0xBFFF) mmc2ChrBanks[0] = value & 0x1F;
+        else if (address >= 0xC000 && address <= 0xCFFF) mmc2ChrBanks[1] = value & 0x1F;
+        else if (address >= 0xD000 && address <= 0xDFFF) mmc2ChrBanks[2] = value & 0x1F;
+        else if (address >= 0xE000 && address <= 0xEFFF) mmc2ChrBanks[3] = value & 0x1F;
+        else if (address >= 0xF000) {
+            if (mirroring != Mirroring::FourScreen)
+                mirroring = (value & 1) ? Mirroring::Horizontal : Mirroring::Vertical;
+        }
+        return;
+    }
     if (mapper == 2) {
         const std::size_t count = prgRom.size() / PRG_BANK_SIZE;
         if (count > 1) prgBank = static_cast<std::uint8_t>(value & 0x0F);
@@ -501,6 +528,19 @@ std::uint8_t Cartridge::readChr(std::uint16_t address) const {
     if (chrData.empty() || address >= 0x2000) return 0;
     std::size_t offset = address;
     if (mapper == 5) return readMmc5Chr(address, false);
+    if (mapper == 9) {
+        const std::uint16_t trigger = address & 0x1FF8;
+        if (trigger == 0x0FD8) mmc2Latch0Fe = false;
+        else if (trigger == 0x0FE8) mmc2Latch0Fe = true;
+        else if (trigger >= 0x1FD8 && trigger <= 0x1FDF) mmc2Latch1Fe = false;
+        else if (trigger >= 0x1FE8 && trigger <= 0x1FEF) mmc2Latch1Fe = true;
+        const std::size_t bank = address < 0x1000
+            ? mmc2ChrBanks[mmc2Latch0Fe ? 1 : 0]
+            : mmc2ChrBanks[mmc2Latch1Fe ? 3 : 2];
+        const std::size_t count = chrData.size() / 0x1000;
+        if (!count) return 0;
+        offset = (bank % count) * 0x1000 + (address & 0x0FFF);
+    }
     if (mapper == 1) {
         const std::size_t count = chrData.size() / 0x1000;
         if (!count) return 0;
@@ -556,7 +596,14 @@ std::uint8_t Cartridge::readMmc5SplitChr(std::uint16_t address) const {
 void Cartridge::writeChr(std::uint16_t address, std::uint8_t value) {
     if (!usesChrRam || address >= 0x2000 || chrData.empty()) return;
     std::size_t offset = address;
-    if (mapper == 5) {
+    if (mapper == 9) {
+        const std::size_t bank = address < 0x1000
+            ? mmc2ChrBanks[mmc2Latch0Fe ? 1 : 0]
+            : mmc2ChrBanks[mmc2Latch1Fe ? 3 : 2];
+        const std::size_t count = chrData.size() / 0x1000;
+        if (!count) return;
+        offset = (bank % count) * 0x1000 + (address & 0x0FFF);
+    } else if (mapper == 5) {
         const std::size_t count = chrData.size() / 0x400;
         if (!count) return;
         const std::size_t slot = address / 0x400;
@@ -630,9 +677,9 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::uint8_t mapper =
         static_cast<std::uint8_t>((flags6 >> 4) | (flags7 & 0xF0));
 
-    if (mapper != 0 && mapper != 1 && mapper != 2 && mapper != 3 && mapper != 4 && mapper != 5 && mapper != 7 && mapper != 11 && mapper != 40 && mapper != 66) {
+    if (mapper != 0 && mapper != 1 && mapper != 2 && mapper != 3 && mapper != 4 && mapper != 5 && mapper != 7 && mapper != 9 && mapper != 11 && mapper != 40 && mapper != 66) {
         error = "Unsupported mapper " + std::to_string(mapper) +
-                ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 11 (Color Dreams), mapper 40 (NTDEC 2722), and mapper 66 (GxROM).";
+                ". This version supports mapper 0 (NROM), mapper 1 (MMC1), mapper 2 (UxROM), mapper 3 (CNROM), mapper 4 (MMC3), mapper 5 (MMC5 initial banking), mapper 7 (AxROM), mapper 9 (MMC2), mapper 11 (Color Dreams), mapper 40 (NTDEC 2722), and mapper 66 (GxROM).";
         return false;
     }
 
@@ -641,6 +688,14 @@ bool loadCartridge(const std::filesystem::path& path, Cartridge& cartridge,
     const std::size_t chrSize =
         static_cast<std::size_t>(bytes[5]) * CHR_BANK_SIZE;
 
+    if (mapper == 9 && (prgSize < 64 * 1024 || prgSize > 256 * 1024 || prgSize % 8192 != 0)) {
+        error = "Mapper 9 requires 64 to 256 KiB of PRG-ROM in 8 KiB banks.";
+        return false;
+    }
+    if (mapper == 9 && chrSize != 128 * 1024) {
+        error = "Mapper 9 requires 128 KiB of CHR-ROM.";
+        return false;
+    }
     if (mapper == 5 && (prgSize < 128 * 1024 || prgSize > 1024 * 1024 || prgSize % 8192 != 0)) {
         error = "Mapper 5 requires 128 KiB to 1 MiB of PRG-ROM in 8 KiB banks.";
         return false;
