@@ -504,13 +504,17 @@ int main(int argc, char** argv) {
     audioWant.channels = 1;
     audioWant.samples = 1024;
     SDL_AudioSpec audioHave{};
+    std::cerr << "Audio init: SDL driver="
+              << (SDL_GetCurrentAudioDriver() ? SDL_GetCurrentAudioDriver() : "none")
+              << ", requesting " << audioWant.freq << " Hz mono S16\n";
     SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioWant, &audioHave, 0);
     if (audioDevice == 0) {
         std::cerr << "Audio device unavailable: " << SDL_GetError() << '\n';
     } else {
-        std::cout << "Audio device opened: " << audioHave.freq << " Hz, "
+        std::cerr << "Audio device opened: " << audioHave.freq << " Hz, "
                   << static_cast<int>(audioHave.channels) << " channel(s), format=0x"
-                  << std::hex << audioHave.format << std::dec << '\n';
+                  << std::hex << audioHave.format << std::dec
+                  << ", device=" << audioDevice << '\n';
         SDL_PauseAudioDevice(audioDevice, 0);
     }
 
@@ -800,11 +804,11 @@ int main(int argc, char** argv) {
 
         const Uint32 diagnosticNow = SDL_GetTicks();
         if (hasCartridge && diagnosticNow - lastAudioDiagnostic >= 2000) {
-            std::cout << "Audio debug: samples queued/2s=" << audioSamplesSubmitted
+            std::cerr << "Audio debug: samples queued/2s=" << audioSamplesSubmitted
                       << " peak=" << audioPeakSinceDiagnostic
                       << " SDL queue bytes="
                       << (audioDevice != 0 ? SDL_GetQueuedAudioSize(audioDevice) : 0)
-                      << '\n';
+                      << " device=" << audioDevice << '\n';
             audioSamplesSubmitted = 0;
             audioPeakSinceDiagnostic = 0;
             lastAudioDiagnostic = diagnosticNow;
