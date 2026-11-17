@@ -417,10 +417,14 @@ std::uint8_t Cartridge::readMmc5Chr(std::uint16_t address, bool background) cons
     const std::size_t registerIndex =
         std::min(registerCount - 1,
                  ((registerSlot / groupSize) + 1) * groupSize - 1);
-    const auto& registers = background ? mmc5BgChrRegisters : mmc5ChrRegisters;
+    // The background and sprite register arrays have different sizes,
+    // so select the register value rather than binding them through a ternary.
+    const std::uint8_t bankRegister = background
+        ? mmc5BgChrRegisters[registerIndex]
+        : mmc5ChrRegisters[registerIndex];
     const std::size_t bankBase =
         ((static_cast<std::size_t>(mmc5ChrHigh) << 8) |
-         registers[registerIndex]) & ~(groupSize - 1);
+         bankRegister) & ~(groupSize - 1);
     const std::size_t bank = (bankBase + (registerSlot % groupSize)) % count;
     const std::size_t offset = bank * 0x400 + (address & 0x03FF);
     return chrData[offset % chrData.size()];
