@@ -206,8 +206,11 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
         if (address == 0x5200 || address == 0x5201 || address == 0x5202 || address == 0x5203)
             return 0;
         if (address >= 0x5C00 && address < 0x6000) return mmc5ExRam[address & 0x03FF];
-        if (address >= 0x6000 && address < 0x8000)
-            return mmc5PrgRam[address & 0x1FFF];
+        if (address >= 0x6000 && address < 0x8000) {
+            const std::size_t bank = mmc5PrgRegisters[0] & 0x7F;
+            const std::size_t offset = bank * 0x2000 + (address & 0x1FFF);
+            return mmc5PrgRam[offset];
+        }
         if (address < 0x8000 || prgRom.empty()) return 0;
         const std::size_t count = prgRom.size() / 0x2000;
         if (!count) return 0;
@@ -245,8 +248,9 @@ std::uint8_t Cartridge::readPrg(std::uint16_t address) {
         const std::size_t bankBase =
             static_cast<std::size_t>(bankReg & 0x7F) & ~(groupSize - 1);
         const std::size_t bank = bankBase + (slot % groupSize);
-        if ((bankReg & 0x80) == 0)
-            return mmc5PrgRam[(bank * 0x2000 + (address & 0x1FFF)) & 0x1FFF];
+        const bool selectsRom = registerIndex == 4 || (bankReg & 0x80) != 0;
+        if (!selectsRom)
+            return mmc5PrgRam[bank * 0x2000 + (address & 0x1FFF)];
         return prgRom[(bank % count) * 0x2000 + (address & 0x1FFF)];
     }
     if (prgRom.empty() || address < (mapper == 40 ? 0x6000 : 0x8000)) return 0;
@@ -311,7 +315,11 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
             return;
         }
         if (address >= 0x6000 && address < 0x8000) {
-            if (prgRamWritable()) mmc5PrgRam[address & 0x1FFF] = value;
+            if (prgRamWritable()) {
+                const std::size_t bank = mmc5PrgRegisters[0] & 0x7F;
+                const std::size_t offset = bank * 0x2000 + (address & 0x1FFF);
+                mmc5PrgRam[offset] = value;
+            }
             return;
         }
         if (address == 0x5100) { mmc5PrgMode = value & 3; return; }
