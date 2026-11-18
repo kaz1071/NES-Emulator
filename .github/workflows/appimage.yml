@@ -1,0 +1,78 @@
+name: Build Linux AppImage
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    name: Build x86_64 AppImage
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake pkg-config libsdl2-dev zenity \
+            file wget fuse
+
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr
+
+      - name: Build
+        run: cmake --build build --parallel 2
+
+      - name: Run tests
+        run: |
+          ctest --test-dir build --output-on-failure
+
+      - name: Install into AppDir
+        run: |
+          DESTDIR="$PWD/AppDir" cmake --install build
+          test -x AppDir/usr/bin/nes-emulator
+          test -f AppDir/usr/share/applications/pixelcore-nes.desktop
+          # Inside an AppImage, launch through its AppRun entry point.
+          sed -i 's|^Exec=.*|Exec=AppRun|' \
+            AppDir/usr/share/applications/pixelcore-nes.desktop
+
+      - name: Build AppImage
+        env:
+          LDAI_OUTPUT: PixelCore-NES-x86_64.AppImage
+          LINUXDEPLOY_OUTPUT_VERSION: ${GITHUB_REF_NAME#v}
+        run: |
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --executable AppDir/usr/bin/nes-emulator \
+            --desktop-file AppDir/usr/share/applications/pixelcore-nes.desktop \
+            --icon-file data/pixelcore-nes.svg \
+            --output appimage
+          test -s PixelCore-NES-x86_64.AppImage
+          chmod +x PixelCore-NES-x86_64.AppImage
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PixelCore-NES-x86_64-AppImage
+          path: PixelCore-NES-x86_64.AppImage
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: PixelCore-NES-x86_64.AppImage
