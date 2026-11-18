@@ -8,37 +8,29 @@
   <title>PixelCore - NES</title>
   <link rel="icon" type="image/svg+xml" href="https://raw.githubusercontent.com/kaz1071/PixelCore---NES/main/data/pixelcore-nes.svg">
   <style>
-    :root { color-scheme: dark; --bg:#101321; --panel:#1a2033; --line:#303a58; --text:#f2f4ff; --muted:#aab2ca; --red:#ef5365; --blue:#7294ff; }
+    :root { color-scheme:dark;--bg:#101321;--line:#303a58;--text:#f2f4ff;--muted:#aab2ca;--red:#ef5365;--blue:#7294ff; }
     * { box-sizing:border-box; }
-    body { margin:0; min-height:100vh; background:radial-gradient(ellipse at 50% -15%,#303b68 0%,var(--bg) 58%); color:var(--text); font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif; }
-    .wrap { width:min(920px,calc(100% - 36px)); margin:auto; }
-    header { display:flex; align-items:center; gap:15px; padding:28px 0; }
+    body { margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#303b68 0%,var(--bg) 58%);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif; }
+    .wrap { width:min(920px,calc(100% - 36px));margin:auto; }
+    header { display:flex;align-items:center;gap:15px;padding:28px 0; }
     header img { width:62px;height:62px;image-rendering:pixelated; }
     .brand { font-size:1.18rem;font-weight:800;letter-spacing:.02em; }
     .brand small { display:block;color:var(--muted);font-size:.75rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase; }
-    main { padding:55px 0 80px; }
+    main { padding:42px 0 80px; }
     .eyebrow { color:#9eafff;text-transform:uppercase;letter-spacing:.18em;font-size:.76rem;font-weight:800; }
-    h1 { font-size:clamp(2.7rem,8vw,5rem);line-height:1.03;letter-spacing:-.055em;margin:14px 0 20px; }
+    h1 { font-size:clamp(2.5rem,7vw,4rem);line-height:1.05;letter-spacing:-.05em;margin:12px 0 18px; }
     h1 span { color:var(--red); }
-    .intro { max-width:650px;color:var(--muted);font-size:1.12rem; }
-    .actions { display:flex;flex-wrap:wrap;gap:12px;margin:30px 0 48px; }
+    h2 { margin:0 0 8px;font-size:1.45rem; }
+    p { color:var(--muted); }
     a.btn { display:inline-block;padding:12px 19px;border-radius:10px;text-decoration:none;font-weight:750; }
     .primary { background:var(--red);color:white;box-shadow:0 7px 24px #ef536533; }
     .secondary { border:1px solid var(--line);color:var(--text);background:#ffffff08; }
-    .panel { background:linear-gradient(145deg,#202840,#171d2e);border:1px solid var(--line);border-radius:18px;padding:25px;margin:22px 0;box-shadow:0 20px 60px #0003; }\n    .download-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;margin:28px 0 48px; }\n    .download-card { background:linear-gradient(145deg,#202840,#171d2e);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 20px 60px #0003; }\n    .download-card h2 { margin-bottom:8px; }\n    .download-card p { color:var(--muted); }\n    .download-card pre { margin:16px 0; }\n    .download-card .btn { margin-top:8px; }
-    h2 { margin:0 0 7px;font-size:1.45rem; }
-    .muted { color:var(--muted);margin-top:0; }
-    pre { white-space:pre-wrap;overflow-wrap:anywhere;background:#0c101c;border:1px solid #303954;border-radius:12px;padding:18px;color:#dce4ff;font: .88rem/1.7 ui-monospace,SFMono-Regular,Consolas,monospace; }
-    .copyrow { display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px; }
-    button { cursor:pointer;border:0;border-radius:9px;padding:11px 17px;background:var(--blue);color:#0b1020;font-weight:800;font-size:.95rem; }
-    #status { color:#b8c5ff;font-size:.9rem; }
-    .features { display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px;margin-top:25px; }
-    .feature { border:1px solid var(--line);border-radius:12px;padding:16px;background:#ffffff06; }
-    .feature b { display:block;margin-bottom:4px; }
-    .feature span { color:var(--muted);font-size:.9rem; }
+    .panel { background:linear-gradient(145deg,#202840,#171d2e);border:1px solid var(--line);border-radius:18px;padding:25px;margin:22px 0;box-shadow:0 20px 60px #0003; }
+    pre { white-space:pre-wrap;overflow-wrap:anywhere;background:#0c101c;border:1px solid #303954;border-radius:12px;padding:18px;color:#dce4ff;font:.88rem/1.7 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .actions { display:flex;flex-wrap:wrap;gap:12px;margin:28px 0; }
     footer { border-top:1px solid var(--line);padding:24px 0 36px;color:var(--muted);font-size:.88rem; }
     footer a { color:#aebdff; }
-    @media(max-width:560px){main{padding-top:30px}.panel{padding:18px}}
+    @media(max-width:560px){main{padding-top:25px}.panel{padding:18px}}
   </style>
 </head>
 <body>
@@ -51,33 +43,16 @@
       <div class="eyebrow">A new take on a classic</div>
       <h1>PixelCore <span>- NES</span></h1>
       <p class="intro">A Nintendo Entertainment System emulator built from scratch in C++ for Linux. One project in the growing PixelCore family.</p>
-      <div class="download-grid" id="download">
-        <section class="download-card">
+      <div class="choice-grid">
+        <section class="choice">
           <h2>AppImage</h2>
-          <p><strong>Recommended for most users.</strong> Download one file and run it. No Git, compiler, or development tools required.</p>
-          <a class="btn primary" href="https://github.com/kaz1071/PixelCore---NES/releases/latest/download/PixelCore-NES-x86_64.AppImage" download>DOWNLOAD FOR LINUX</a>
-          <p>After downloading, open a terminal in the download folder and run:</p>
-          <pre>chmod +x PixelCore-NES-x86_64.AppImage
-./PixelCore-NES-x86_64.AppImage</pre>
-          <p>It includes the features from the published release. It does not include game ROMs; use your own legally obtained game files.</p>
+          <p>The easiest way to get started. Download one file and run PixelCore - NES without installing development tools.</p>
+          <a class="btn primary" href="download.html">APPIMAGE DOWNLOAD ↗</a>
         </section>
-
-        <section class="download-card" id="source">
+        <section class="choice">
           <h2>Build from source</h2>
-          <p>Get the complete source code if you want to inspect, modify, or build PixelCore - NES yourself. This option requires Linux build tools and SDL2 development files.</p>
-          <p><strong>1. Install the dependencies</strong></p>
-          <pre>sudo apt update
-sudo apt install build-essential cmake pkg-config libsdl2-dev zenity</pre>
-          <p><strong>2. Download the source code</strong></p>
-          <pre>git clone https://github.com/kaz1071/PixelCore---NES.git
-cd PixelCore---NES</pre>
-          <p><strong>3. Build and install</strong></p>
-          <pre>cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$HOME/.local"
-cmake --build build -j$(nproc)
-ctest --test-dir build --output-on-failure
-cmake --install build</pre>
-          <p>To update a copy you already cloned later, run <code>git pull</code> from inside the <code>PixelCore---NES</code> folder, then repeat the build commands.</p>
-          <a class="btn secondary" href="https://github.com/kaz1071/PixelCore---NES">View source on GitHub ↗</a>
+          <p>Get the complete source code, build the emulator yourself, and customize it. Requires Linux build tools.</p>
+          <a class="btn secondary" href="source.html">SOURCE CODE & BUILD ↗</a>
         </section>
       </div>
       <p class="muted">The emulator does not include game ROMs; use your own legally obtained game files.</p>
