@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101321">
+  <meta name="description" content="Download the PixelCore - NES Linux AppImage.">
+  <title>AppImage download | PixelCore - NES</title>
+  <link rel="icon" type="image/svg+xml" href="https://raw.githubusercontent.com/kaz1071/PixelCore---NES/main/data/pixelcore-nes.svg">
+  <style>
+    :root { color-scheme:dark;--bg:#101321;--line:#303a58;--text:#f2f4ff;--muted:#aab2ca;--red:#ef5365;--blue:#7294ff; }
+    * { box-sizing:border-box; }
+    body { margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#303b68 0%,var(--bg) 58%);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif; }
+    .wrap { width:min(920px,calc(100% - 36px));margin:auto; }
+    header { display:flex;align-items:center;gap:15px;padding:28px 0; }
+    header img { width:62px;height:62px;image-rendering:pixelated; }
+    .brand { font-size:1.18rem;font-weight:800;letter-spacing:.02em; }
+    .brand small { display:block;color:var(--muted);font-size:.75rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase; }
+    main { padding:42px 0 80px; }
+    .eyebrow { color:#9eafff;text-transform:uppercase;letter-spacing:.18em;font-size:.76rem;font-weight:800; }
+    h1 { font-size:clamp(2.5rem,7vw,4rem);line-height:1.05;letter-spacing:-.05em;margin:12px 0 18px; }
+    h1 span { color:var(--red); }
+    h2 { margin:0 0 8px;font-size:1.45rem; }
+    p { color:var(--muted); }
+    a.btn { display:inline-block;padding:12px 19px;border-radius:10px;text-decoration:none;font-weight:750; }
+    .primary { background:var(--red);color:white;box-shadow:0 7px 24px #ef536533; }
+    .secondary { border:1px solid var(--line);color:var(--text);background:#ffffff08; }
+    .panel { background:linear-gradient(145deg,#202840,#171d2e);border:1px solid var(--line);border-radius:18px;padding:25px;margin:22px 0;box-shadow:0 20px 60px #0003; }
+    pre { white-space:pre-wrap;overflow-wrap:anywhere;background:#0c101c;border:1px solid #303954;border-radius:12px;padding:18px;color:#dce4ff;font:.88rem/1.7 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .actions { display:flex;flex-wrap:wrap;gap:12px;margin:28px 0; }
+    footer { border-top:1px solid var(--line);padding:24px 0 36px;color:var(--muted);font-size:.88rem; }
+    footer a { color:#aebdff; }
+    @media(max-width:560px){main{padding-top:25px}.panel{padding:18px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="https://raw.githubusercontent.com/kaz1071/PixelCore---NES/main/data/pixelcore-nes.svg" alt="PixelCore controller icon">
+      <div class="brand">PIXELCORE <small>the emulator family</small></div>
+    </header>
+    <main>
+      <div class="eyebrow">PixelCore - NES downloads</div>
+      
+      <h1>Download <span>AppImage</span></h1>
+      <p>Get the ready-to-run Linux version of PixelCore - NES. This is the easiest option for most people and does not require Git or development tools.</p>
+      <section class="panel">
+        <h2>1. Download the AppImage</h2>
+        <p>Download the latest published build:</p>
+        <a class="btn primary" href="https://github.com/kaz1071/PixelCore---NES/releases/latest/download/PixelCore-NES-x86_64.AppImage" download>DOWNLOAD FOR LINUX</a>
+        <h2 style="margin-top:28px">2. Make it executable and run it</h2>
+        <p>Open a terminal in the folder where the file was downloaded, then run:</p>
+        <pre>chmod +x PixelCore-NES-x86_64.AppImage
+./PixelCore-NES-x86_64.AppImage</pre>
+        <p>If your desktop asks whether to run the file, choose <strong>Run</strong>.</p>
+      </section>
+      <p>The AppImage contains the features included in that published release. It does not include game ROMs; use your own legally obtained game files.</p>
+      <div class="actions"><a class="btn secondary" href="source.html">Build from source instead</a></div>
+
+    </main>
+    <footer><a href="index.html">← Back to PixelCore - NES</a> · <a href="https://github.com/kaz1071/PixelCore---NES">GitHub</a></footer>
+  </div>
+</body>
+</html>
