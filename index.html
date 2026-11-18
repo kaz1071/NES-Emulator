@@ -52,24 +52,16 @@
       <h1>PixelCore <span>- NES</span></h1>
       <p class="intro">A Nintendo Entertainment System emulator built from scratch in C++ for Linux. One project in the growing PixelCore family.</p>
       <div class="actions">
-        <a class="btn primary" href="#install">Install PixelCore</a>
+        <a class="btn primary" href="https://github.com/kaz1071/PixelCore---NES/releases/latest/download/PixelCore-NES-x86_64.AppImage" download>DOWNLOAD FOR LINUX</a>
         <a class="btn secondary" href="https://github.com/kaz1071/PixelCore---NES">View on GitHub ↗</a>
       </div>
 
       <section class="panel" id="install">
-        <h2>Get PixelCore - NES</h2>
-        <p class="muted">On Debian or Chromebook Linux, open Terminal and paste this command. It installs the build tools, downloads the source, builds the emulator, and adds it to your app launcher.</p>
-        <pre id="install-command">sudo apt update
-sudo apt install -y git build-essential cmake pkg-config libsdl2-dev zenity
-git clone https://github.com/kaz1071/PixelCore---NES.git
-cd PixelCore---NES
-cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$HOME/.local"
-cmake --build build -j$(nproc)
-cmake --install build</pre>
-        <div class="copyrow">
-          <button id="copy" type="button">Copy install command</button>
-          <span id="status" role="status" aria-live="polite"></span>
-        </div>
+        <h2>Download PixelCore - NES</h2>
+        <p class="muted">Download the Linux AppImage, then make it executable and launch it. No Git clone or build tools required.</p>
+        <pre>chmod +x PixelCore-NES-x86_64.AppImage
+./PixelCore-NES-x86_64.AppImage</pre>
+        <p class="muted">If your desktop asks whether to run the file, choose <strong>Run</strong>. The emulator does not include game ROMs; use your own legally obtained game files.</p>
       </section>
 
       <h2>Built for the classics</h2>
@@ -82,20 +74,5 @@ cmake --install build</pre>
     </main>
     <footer>© PixelCore · <a href="https://github.com/kaz1071">GitHub</a> · Open-source project</footer>
   </div>
-  <script>
-    const button = document.getElementById('copy');
-    const command = document.getElementById('install-command').innerText;
-    const status = document.getElementById('status');
-    button.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(command);
-        button.textContent = 'Copied!';
-        status.textContent = 'Paste it into your Linux Terminal.';
-        setTimeout(() => { button.textContent = 'Copy install command'; }, 2200);
-      } catch {
-        status.textContent = 'Copy was blocked by your browser. Select the command above and copy it manually.';
-      }
-    });
-  </script>
 </body>
 </html>
