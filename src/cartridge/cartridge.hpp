@@ -21,6 +21,10 @@ struct CartridgeState {
     std::uint8_t mmc1ChrBank0 = 0, mmc1ChrBank1 = 0, mmc1PrgBank = 0;
     std::array<std::uint8_t, 8> mmc3BankRegisters{};
     std::uint8_t mmc3BankSelect = 0;
+    std::array<std::uint16_t, 16> mmc3DebugWriteAddresses{};
+    std::array<std::uint8_t, 16> mmc3DebugWriteValues{};
+    std::array<std::uint8_t, 16> mmc3DebugWriteSelects{};
+    std::size_t mmc3DebugWriteIndex = 0;
     bool mmc3PrgRamEnabled = true, mmc3PrgRamWriteProtected = false;
     std::uint8_t mmc3IrqLatch = 0, mmc3IrqCounter = 0;
     bool mmc3IrqReload = false, mmc3IrqEnabled = false, mmc3IrqPending = false;
