@@ -181,6 +181,9 @@ void CPU6502::reset() {
     traceAddresses.fill(0);
     traceOpcodes.fill(0);
     traceIndex = 0;
+    hasLastJmp = false;
+    lastJmpAddress = 0;
+    lastJmpLow = lastJmpHigh = 0;
     const std::uint8_t low = read(0xFFFC);
     const std::uint8_t high = read(0xFFFD);
     pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
