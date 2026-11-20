@@ -865,24 +865,41 @@ int main(int argc, char** argv) {
                                       << ":$" << static_cast<int>(cpu.debugTraceOpcode(trace)) << "]";
                         }
                         std::cerr << std::dec << '\n';
-                        if (cartridge.mapper == 4 && cartridge.prgRom.size() >= 0x2000) {
-                            const std::size_t bankCount = cartridge.prgRom.size() / 0x2000;
-                            const std::size_t targetSlot = (0xA826 - 0x8000) / 0x2000;
-                            const std::size_t lastBank = bankCount - 1;
-                            const std::size_t secondLastBank = bankCount > 1 ? bankCount - 2 : 0;
-                            const std::size_t bank6 = cartridge.mmc3BankRegisters[6] % bankCount;
-                            const std::size_t bank7 = cartridge.mmc3BankRegisters[7] % bankCount;
-                            const std::size_t targetBank = (cartridge.mmc3BankSelect & 0x40)
-                                ? (targetSlot == 0 ? secondLastBank : targetSlot == 1 ? bank7
-                                   : targetSlot == 2 ? bank6 : lastBank)
-                                : (targetSlot == 0 ? bank6 : targetSlot == 1 ? bank7
-                                   : targetSlot == 2 ? secondLastBank : lastBank);
-                            std::cerr << "MMC3 PRG mapping at $A826: bank-select=$"
-                                      << std::hex << static_cast<int>(cartridge.mmc3BankSelect)
-                                      << " R6=$" << static_cast<int>(cartridge.mmc3BankRegisters[6])
-                                      << " R7=$" << static_cast<int>(cartridge.mmc3BankRegisters[7])
-                                      << " physical-8KB-bank=$" << targetBank
-                                      << std::dec << " of " << bankCount << '\n';
+                        if (cpu.debugHasLastJmp()) {
+                            const std::uint16_t source = cpu.debugLastJmpAddress();
+                            const std::uint16_t target = static_cast<std::uint16_t>(
+                                cpu.debugLastJmpLow() |
+                                (static_cast<std::uint16_t>(cpu.debugLastJmpHigh()) << 8));
+                            std::cerr << "Last absolute JMP: from=$" << std::hex << source
+                                      << " operands=$" << static_cast<int>(cpu.debugLastJmpLow())
+                                      << ",$" << static_cast<int>(cpu.debugLastJmpHigh())
+                                      << " target=$" << target << std::dec << '\n';
+                            if (cartridge.mapper == 4 && target >= 0x8000 &&
+                                cartridge.prgRom.size() >= 0x2000) {
+                                const std::size_t bankCount = cartridge.prgRom.size() / 0x2000;
+                                const std::size_t slot = (target - 0x8000) / 0x2000;
+                                const std::size_t lastBank = bankCount - 1;
+                                const std::size_t secondLastBank = bankCount > 1 ? bankCount - 2 : 0;
+                                const std::size_t bank6 = cartridge.mmc3BankRegisters[6] % bankCount;
+                                const std::size_t bank7 = cartridge.mmc3BankRegisters[7] % bankCount;
+                                const std::size_t targetBank = (cartridge.mmc3BankSelect & 0x40)
+                                    ? (slot == 0 ? secondLastBank : slot == 1 ? bank7
+                                       : slot == 2 ? bank6 : lastBank)
+                                    : (slot == 0 ? bank6 : slot == 1 ? bank7
+                                       : slot == 2 ? secondLastBank : lastBank);
+                                const std::size_t bankOffset = targetBank * 0x2000 +
+                                    (target & 0x1FFF);
+                                std::cerr << "ROM bytes at JMP target (bank " << targetBank
+                                          << ", offset $" << std::hex << (target & 0x1FFF) << "):";
+                                for (int i = -4; i <= 8; ++i) {
+                                    const std::size_t index = static_cast<std::size_t>(
+                                        static_cast<std::ptrdiff_t>(bankOffset) + i);
+                                    if (i < 0 && bankOffset < static_cast<std::size_t>(-i)) continue;
+                                    if (index >= cartridge.prgRom.size()) continue;
+                                    std::cerr << " $" << static_cast<int>(cartridge.prgRom[index]);
+                                }
+                                std::cerr << std::dec << '\n';
+                            }
                         }
                         cpuStopReported = true;
                     }
