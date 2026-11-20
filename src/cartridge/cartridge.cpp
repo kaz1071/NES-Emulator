@@ -607,6 +607,10 @@ void Cartridge::writePrg(std::uint16_t address, std::uint8_t value) {
     }
     if (mapper != 4) return;
     const bool odd = (address & 1) != 0;
+    mmc3DebugWriteAddresses[mmc3DebugWriteIndex] = address;
+    mmc3DebugWriteValues[mmc3DebugWriteIndex] = value;
+    mmc3DebugWriteSelects[mmc3DebugWriteIndex] = mmc3BankSelect;
+    mmc3DebugWriteIndex = (mmc3DebugWriteIndex + 1) % mmc3DebugWriteAddresses.size();
     switch (address & 0xE000) {
         case 0x8000:
             if (!odd) mmc3BankSelect = value;
