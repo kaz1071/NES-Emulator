@@ -45,6 +45,11 @@ void CPU6502::loadState(const State& state) {
     lastError.clear();
     traceAddresses.fill(0);
     traceOpcodes.fill(0);
+    traceA.fill(0);
+    traceX.fill(0);
+    traceY.fill(0);
+    traceSP.fill(0);
+    traceStatus.fill(0);
     traceIndex = 0;
     hasLastJmp = false;
     lastJmpAddress = 0;
@@ -180,6 +185,11 @@ void CPU6502::reset() {
     lastError.clear();
     traceAddresses.fill(0);
     traceOpcodes.fill(0);
+    traceA.fill(0);
+    traceX.fill(0);
+    traceY.fill(0);
+    traceSP.fill(0);
+    traceStatus.fill(0);
     traceIndex = 0;
     hasLastJmp = false;
     lastJmpAddress = 0;
@@ -261,6 +271,11 @@ bool CPU6502::step() {
     const std::uint8_t opcode = fetch();
     traceAddresses[traceIndex] = instructionAddress;
     traceOpcodes[traceIndex] = opcode;
+    traceA[traceIndex] = a;
+    traceX[traceIndex] = x;
+    traceY[traceIndex] = y;
+    traceSP[traceIndex] = sp;
+    traceStatus[traceIndex] = status;
     traceIndex = (traceIndex + 1) % traceAddresses.size();
     switch (opcode) {
 
@@ -570,6 +585,21 @@ std::uint16_t CPU6502::debugTraceAddress(std::size_t index) const {
 }
 std::uint8_t CPU6502::debugTraceOpcode(std::size_t index) const {
     return traceOpcodes[(traceIndex + index) % traceOpcodes.size()];
+}
+std::uint8_t CPU6502::debugTraceA(std::size_t index) const {
+    return traceA[(traceIndex + index) % traceA.size()];
+}
+std::uint8_t CPU6502::debugTraceX(std::size_t index) const {
+    return traceX[(traceIndex + index) % traceX.size()];
+}
+std::uint8_t CPU6502::debugTraceY(std::size_t index) const {
+    return traceY[(traceIndex + index) % traceY.size()];
+}
+std::uint8_t CPU6502::debugTraceSP(std::size_t index) const {
+    return traceSP[(traceIndex + index) % traceSP.size()];
+}
+std::uint8_t CPU6502::debugTraceStatus(std::size_t index) const {
+    return traceStatus[(traceIndex + index) % traceStatus.size()];
 }
 
 bool CPU6502::debugHasLastJmp() const { return hasLastJmp; }
