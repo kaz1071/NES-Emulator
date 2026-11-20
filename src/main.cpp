@@ -913,6 +913,18 @@ int main(int argc, char** argv) {
                                     std::cerr << " $" << static_cast<int>(cartridge.prgRom[index]);
                                 }
                                 std::cerr << std::dec << '\n';
+                                std::cerr << "Bytes at offset $" << std::hex
+                                          << (target & 0x1FFF) << " in every PRG bank:";
+                                for (std::size_t bank = 0; bank < bankCount; ++bank) {
+                                    const std::size_t index = bank * 0x2000 +
+                                        (target & 0x1FFF);
+                                    std::cerr << " [bank " << std::dec << bank << ":";
+                                    for (std::size_t byte = 0; byte < 8; ++byte)
+                                        std::cerr << " $" << std::hex
+                                                  << static_cast<int>(cartridge.prgRom[index + byte]);
+                                    std::cerr << "]";
+                                }
+                                std::cerr << std::dec << '\n';
                             }
                         }
                         cpuStopReported = true;
