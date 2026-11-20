@@ -30,6 +30,10 @@ public:
     const std::string& error() const;
     std::uint16_t debugTraceAddress(std::size_t index) const;
     std::uint8_t debugTraceOpcode(std::size_t index) const;
+    bool debugHasLastJmp() const;
+    std::uint16_t debugLastJmpAddress() const;
+    std::uint8_t debugLastJmpLow() const;
+    std::uint8_t debugLastJmpHigh() const;
 
 private:
     static constexpr std::uint8_t FLAG_CARRY = 0x01;
@@ -51,6 +55,9 @@ private:
     std::array<std::uint16_t, 16> traceAddresses{};
     std::array<std::uint8_t, 16> traceOpcodes{};
     std::size_t traceIndex = 0;
+    bool hasLastJmp = false;
+    std::uint16_t lastJmpAddress = 0;
+    std::uint8_t lastJmpLow = 0, lastJmpHigh = 0;
 
     std::uint8_t read(std::uint16_t address);
     void write(std::uint16_t address, std::uint8_t value);
