@@ -155,6 +155,8 @@ const char* mirroringName(Mirroring m) {
         case Mirroring::Horizontal: return "Horizontal";
         case Mirroring::Vertical: return "Vertical";
         case Mirroring::FourScreen: return "Four-screen";
+        case Mirroring::OneScreenLower: return "One-screen lower";
+        case Mirroring::OneScreenUpper: return "One-screen upper";
     }
     return "Unknown";
 }
@@ -522,7 +524,7 @@ int main(int argc, char** argv) {
             audioFailure = (error && *error) ? error : "audio backend initialization failed";
             std::cerr << "Audio: backend "
                       << (driver ? driver : "(default)")
-                      << " failed to initialize: " << audioFailure << '\\n';
+                      << " failed to initialize: " << audioFailure << '\n';
             return false;
         }
 
@@ -533,7 +535,7 @@ int main(int argc, char** argv) {
             std::cerr << "Audio: backend "
                       << (driver ? driver : "(default)")
                       << " initialized but could not open an output device: "
-                      << audioFailure << '\\n';
+                      << audioFailure << '\n';
             SDL_AudioQuit();
             return false;
         }
@@ -543,7 +545,7 @@ int main(int argc, char** argv) {
                   << audioHave.freq << " Hz, "
                   << static_cast<int>(audioHave.channels)
                   << " channel(s), format=0x" << std::hex << audioHave.format
-                  << std::dec << ", device=" << audioDevice << '\\n';
+                  << std::dec << ", device=" << audioDevice << '\n';
         return true;
     };
 
@@ -558,7 +560,7 @@ int main(int argc, char** argv) {
     if (audioDevice == 0) {
         std::cerr << "Audio unavailable: every SDL audio backend failed. Last error: "
                   << (audioFailure.empty() ? "unknown audio error" : audioFailure)
-                  << '\\n';
+                  << '\n';
         std::cerr << "The emulator will continue without audio.\\n";
     } else {
         SDL_PauseAudioDevice(audioDevice, 0);
@@ -578,7 +580,7 @@ int main(int argc, char** argv) {
             const char* error = SDL_GetError();
             std::cerr << "Audio startup tone queue failed: "
                       << ((error && *error) ? error : "unknown SDL queue error")
-                      << '\\n';
+                      << '\n';
         } else {
             std::cerr << "Audio: queued 1-second 440 Hz output test tone.\\n";
         }
@@ -670,9 +672,9 @@ int main(int argc, char** argv) {
                                   << (SDL_GetCurrentAudioDriver() ?
                                       SDL_GetCurrentAudioDriver() : "(unknown)")
                                   << ", queued bytes="
-                                  << SDL_GetQueuedAudioSize(audioDevice) << '\\n';
+                                  << SDL_GetQueuedAudioSize(audioDevice) << '\n';
                     } else {
-                        std::cerr << "Audio test queue failed: " << SDL_GetError() << '\\n';
+                        std::cerr << "Audio test queue failed: " << SDL_GetError() << '\n';
                     }
                 }
             }
