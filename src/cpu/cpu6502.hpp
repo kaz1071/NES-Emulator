@@ -30,6 +30,11 @@ public:
     const std::string& error() const;
     std::uint16_t debugTraceAddress(std::size_t index) const;
     std::uint8_t debugTraceOpcode(std::size_t index) const;
+    std::uint8_t debugTraceA(std::size_t index) const;
+    std::uint8_t debugTraceX(std::size_t index) const;
+    std::uint8_t debugTraceY(std::size_t index) const;
+    std::uint8_t debugTraceSP(std::size_t index) const;
+    std::uint8_t debugTraceStatus(std::size_t index) const;
     bool debugHasLastJmp() const;
     std::uint16_t debugLastJmpAddress() const;
     std::uint8_t debugLastJmpLow() const;
@@ -54,6 +59,7 @@ private:
     std::string lastError;
     std::array<std::uint16_t, 16> traceAddresses{};
     std::array<std::uint8_t, 16> traceOpcodes{};
+    std::array<std::uint8_t, 16> traceA{}, traceX{}, traceY{}, traceSP{}, traceStatus{};
     std::size_t traceIndex = 0;
     bool hasLastJmp = false;
     std::uint16_t lastJmpAddress = 0;
