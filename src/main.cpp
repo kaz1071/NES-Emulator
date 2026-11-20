@@ -865,6 +865,25 @@ int main(int argc, char** argv) {
                                       << ":$" << static_cast<int>(cpu.debugTraceOpcode(trace)) << "]";
                         }
                         std::cerr << std::dec << '\n';
+                        if (cartridge.mapper == 4 && cartridge.prgRom.size() >= 0x2000) {
+                            const std::size_t bankCount = cartridge.prgRom.size() / 0x2000;
+                            const std::size_t targetSlot = (0xA826 - 0x8000) / 0x2000;
+                            const std::size_t lastBank = bankCount - 1;
+                            const std::size_t secondLastBank = bankCount > 1 ? bankCount - 2 : 0;
+                            const std::size_t bank6 = cartridge.mmc3BankRegisters[6] % bankCount;
+                            const std::size_t bank7 = cartridge.mmc3BankRegisters[7] % bankCount;
+                            const std::size_t targetBank = (cartridge.mmc3BankSelect & 0x40)
+                                ? (targetSlot == 0 ? secondLastBank : targetSlot == 1 ? bank7
+                                   : targetSlot == 2 ? bank6 : lastBank)
+                                : (targetSlot == 0 ? bank6 : targetSlot == 1 ? bank7
+                                   : targetSlot == 2 ? secondLastBank : lastBank);
+                            std::cerr << "MMC3 PRG mapping at $A826: bank-select=$"
+                                      << std::hex << static_cast<int>(cartridge.mmc3BankSelect)
+                                      << " R6=$" << static_cast<int>(cartridge.mmc3BankRegisters[6])
+                                      << " R7=$" << static_cast<int>(cartridge.mmc3BankRegisters[7])
+                                      << " physical-8KB-bank=$" << targetBank
+                                      << std::dec << " of " << bankCount << '\n';
+                        }
                         cpuStopReported = true;
                     }
                     break;
