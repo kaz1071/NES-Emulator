@@ -222,7 +222,10 @@ void Cartridge::clockScanline(bool rendering) {
             mmc5IrqPending = true;
         return;
     }
-    if (mapper != 4) return;
+    // MMC3 IRQs are clocked by PPU A12 rising edges. With rendering
+    // disabled, the PPU does not perform the pattern-table fetch sequence
+    // that clocks the counter, so a scanline approximation must not tick it.
+    if (mapper != 4 || !rendering) return;
     if (mmc3IrqCounter == 0 || mmc3IrqReload) {
         mmc3IrqCounter = mmc3IrqLatch;
         mmc3IrqReload = false;
