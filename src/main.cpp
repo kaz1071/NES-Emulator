@@ -877,7 +877,7 @@ int main(int argc, char** argv) {
                                           << " sel=$" << static_cast<int>(cartridge.mmc3DebugWriteSelects[index])
                                           << "]";
                             }
-                            std::cerr << std::dec << '\\n';
+                            std::cerr << std::dec << '\n';
                         }
                         if (cpu.debugHasLastJmp()) {
                             const std::uint16_t source = cpu.debugLastJmpAddress();
