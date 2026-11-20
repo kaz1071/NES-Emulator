@@ -859,12 +859,17 @@ int main(int argc, char** argv) {
                 if (!cpu.step()) {
                     if (!cpuStopReported) {
                         std::cerr << "CPU stopped: " << cpu.error() << '\n';
-                        std::cerr << "CPU instruction trace (oldest to newest):";
+                        std::cerr << "CPU instruction trace (oldest to newest; registers are before each instruction):\n";
                         for (std::size_t trace = 0; trace < 16; ++trace) {
-                            std::cerr << " [$" << std::hex << cpu.debugTraceAddress(trace)
-                                      << ":$" << static_cast<int>(cpu.debugTraceOpcode(trace)) << "]";
+                            std::cerr << "  PC=$" << std::hex << cpu.debugTraceAddress(trace)
+                                      << " OP=$" << static_cast<int>(cpu.debugTraceOpcode(trace))
+                                      << " A=$" << static_cast<int>(cpu.debugTraceA(trace))
+                                      << " X=$" << static_cast<int>(cpu.debugTraceX(trace))
+                                      << " Y=$" << static_cast<int>(cpu.debugTraceY(trace))
+                                      << " SP=$" << static_cast<int>(cpu.debugTraceSP(trace))
+                                      << " P=$" << static_cast<int>(cpu.debugTraceStatus(trace))
+                                      << std::dec << '\n';
                         }
-                        std::cerr << std::dec << '\n';
                         if (cartridge.mapper == 4) {
                             std::cerr << "Recent MMC3 writes (oldest to newest):";
                             for (std::size_t i = 0; i < cartridge.mmc3DebugWriteAddresses.size(); ++i) {
