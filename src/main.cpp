@@ -857,6 +857,12 @@ int main(int argc, char** argv) {
                 if (!cpu.step()) {
                     if (!cpuStopReported) {
                         std::cerr << "CPU stopped: " << cpu.error() << '\n';
+                        std::cerr << "CPU instruction trace (oldest to newest):";
+                        for (std::size_t trace = 0; trace < 16; ++trace) {
+                            std::cerr << " [$" << std::hex << cpu.debugTraceAddress(trace)
+                                      << ":$" << static_cast<int>(cpu.debugTraceOpcode(trace)) << "]";
+                        }
+                        std::cerr << std::dec << '\n';
                         cpuStopReported = true;
                     }
                     break;
