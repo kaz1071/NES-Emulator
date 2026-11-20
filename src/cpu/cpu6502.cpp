@@ -46,6 +46,9 @@ void CPU6502::loadState(const State& state) {
     traceAddresses.fill(0);
     traceOpcodes.fill(0);
     traceIndex = 0;
+    hasLastJmp = false;
+    lastJmpAddress = 0;
+    lastJmpLow = lastJmpHigh = 0;
 }
 
 void CPU6502::connectBus(NESBus* connectedBus) {
@@ -526,7 +529,15 @@ bool CPU6502::step() {
             pc = static_cast<std::uint16_t>(low | (static_cast<std::uint16_t>(high) << 8));
             break;
         }
-        case 0x4C: pc = fetchWord(); break;
+        case 0x4C: {
+            lastJmpAddress = instructionAddress;
+            lastJmpLow = fetch();
+            lastJmpHigh = fetch();
+            hasLastJmp = true;
+            pc = static_cast<std::uint16_t>(
+                lastJmpLow | (static_cast<std::uint16_t>(lastJmpHigh) << 8));
+            break;
+        }
         case 0xEA: break;
         case 0x00:
             isHalted = true;
@@ -557,3 +568,8 @@ std::uint16_t CPU6502::debugTraceAddress(std::size_t index) const {
 std::uint8_t CPU6502::debugTraceOpcode(std::size_t index) const {
     return traceOpcodes[(traceIndex + index) % traceOpcodes.size()];
 }
+
+bool CPU6502::debugHasLastJmp() const { return hasLastJmp; }
+std::uint16_t CPU6502::debugLastJmpAddress() const { return lastJmpAddress; }
+std::uint8_t CPU6502::debugLastJmpLow() const { return lastJmpLow; }
+std::uint8_t CPU6502::debugLastJmpHigh() const { return lastJmpHigh; }
