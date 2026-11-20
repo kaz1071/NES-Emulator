@@ -865,6 +865,20 @@ int main(int argc, char** argv) {
                                       << ":$" << static_cast<int>(cpu.debugTraceOpcode(trace)) << "]";
                         }
                         std::cerr << std::dec << '\n';
+                        if (cartridge.mapper == 4) {
+                            std::cerr << "Recent MMC3 writes (oldest to newest):";
+                            for (std::size_t i = 0; i < cartridge.mmc3DebugWriteAddresses.size(); ++i) {
+                                const std::size_t index = (cartridge.mmc3DebugWriteIndex + i) %
+                                    cartridge.mmc3DebugWriteAddresses.size();
+                                if (cartridge.mmc3DebugWriteAddresses[index] == 0) continue;
+                                std::cerr << " [$" << std::hex
+                                          << cartridge.mmc3DebugWriteAddresses[index]
+                                          << "=$" << static_cast<int>(cartridge.mmc3DebugWriteValues[index])
+                                          << " sel=$" << static_cast<int>(cartridge.mmc3DebugWriteSelects[index])
+                                          << "]";
+                            }
+                            std::cerr << std::dec << '\\n';
+                        }
                         if (cpu.debugHasLastJmp()) {
                             const std::uint16_t source = cpu.debugLastJmpAddress();
                             const std::uint16_t target = static_cast<std::uint16_t>(
